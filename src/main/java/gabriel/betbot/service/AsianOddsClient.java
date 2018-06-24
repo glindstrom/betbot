@@ -5,7 +5,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
+import gabriel.betbot.dtos.AccountSummary;
 import gabriel.betbot.utils.Client;
+import gabriel.betbot.utils.JsonMapper;
 import java.io.IOException;
 import java.util.List;
 import java.util.logging.Level;
@@ -27,9 +29,11 @@ public class AsianOddsClient {
     private static final String REGISTER_URL_SUFFIX = "/Register?username=" + WEB_API_USERNAME;
     private static final String TOKEN_HEADER_NAME = "AOToken";
     private static final String KEY_HEADER_NAME = "AOKey";
+    private static final String ACCOUNT_SUMMARY_URL = BASE_URL + "/GetAccountSummary";
     
     private final Client client;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private Header tokenHeader;
 
     public AsianOddsClient(final Client client) {
         this.client = client;
@@ -37,17 +41,12 @@ public class AsianOddsClient {
     
     public LoginResponse login() {
         CloseableHttpResponse response = client.doGet(LOGIN_URL);
-        try {
-            return objectMapper.readValue(response.getEntity().getContent(), LoginResponse.class);
-        } catch (IOException ex) {
-            Logger.getLogger(AsianOddsClient.class.getName()).log(Level.SEVERE, null, ex);
-            throw new RuntimeException(ex);
-        }
+        return JsonMapper.jsonToObject(response, LoginResponse.class);    
     }
     
     public void register(final LoginResponse loginResponse) {
         String registerUrl = loginResponse.result.url + REGISTER_URL_SUFFIX;
-        Header tokenHeader = new BasicHeader(TOKEN_HEADER_NAME, loginResponse.result.token);
+        this.tokenHeader = new BasicHeader(TOKEN_HEADER_NAME, loginResponse.result.token);
         Header keyHeader = new BasicHeader(KEY_HEADER_NAME, loginResponse.result.key);
         List<Header> headers = ImmutableList.of(tokenHeader, keyHeader);
         CloseableHttpResponse response = client.doGet(registerUrl, headers);
@@ -58,10 +57,21 @@ public class AsianOddsClient {
         }
     }
     
+    public void loginAndRegister() {
+        this.register(this.login());
+    }
+    
+    public AccountSummary getAccountSummary() {
+        List<Header> headers = ImmutableList.of(tokenHeader);
+        CloseableHttpResponse response = client.doGet(ACCOUNT_SUMMARY_URL, headers);
+        return JsonMapper.jsonToObject(response, AccountSummary.class);
+    }
+    
     public static void main(String[] args) {
         Client client = new Client();
         AsianOddsClient loginService = new AsianOddsClient(client);
-        loginService.register(loginService.login());
+        loginService.loginAndRegister();
+        System.out.println(loginService.getAccountSummary());
     }
     
     @JsonIgnoreProperties(ignoreUnknown = true)

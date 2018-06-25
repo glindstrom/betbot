@@ -13,6 +13,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.inject.Inject;
+import javax.inject.Named;
 import org.apache.http.Header;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.message.BasicHeader;
@@ -21,6 +23,7 @@ import org.apache.http.message.BasicHeader;
  *
  * @author gabriel
  */
+@Named
 public class AsianOddsClient {
 
     private static final String WEB_API_USERNAME = System.getenv("ASIANODDSWEBAPIUSERNAME");
@@ -36,6 +39,7 @@ public class AsianOddsClient {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private Header tokenHeader;
 
+    @Inject
     public AsianOddsClient(final Client client) {
         this.client = client;
     }
@@ -69,6 +73,9 @@ public class AsianOddsClient {
     }
     
     public TradeFeedDto getFootballFeeds() {
+        if (tokenHeader == null) {
+            loginAndRegister();
+        }
          List<Header> headers = ImmutableList.of(tokenHeader);
          String feedUrl = BASE_URL + "/GetFeeds?marketTypeId=1&SportsType=1&OddsFormat=OO";
          CloseableHttpResponse response = client.doGet(feedUrl, headers);

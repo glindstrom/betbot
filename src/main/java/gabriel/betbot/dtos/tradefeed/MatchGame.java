@@ -48,7 +48,7 @@ public class MatchGame {
     @JsonProperty("FullTimeOu")
     public final FullTimeOu fullTimeOu;
     @JsonProperty("GameId")
-    public final Integer gameId;
+    public final Long gameId;
     @JsonProperty("HalfTimeHdp")
     public final  HalfTimeHdp halfTimeHdp;
     @JsonProperty("HalfTimeOneXTwo")
@@ -72,15 +72,15 @@ public class MatchGame {
     @JsonProperty("MarketTypeId")
     public final Integer marketTypeId;
     @JsonProperty("MatchId")
-    public final Integer matchId;
+    public final Long matchId;
     @JsonProperty("StartTime")
     public final LocalDateTime startTime;
     @JsonProperty("StartsOn")
     public final String startsOn;
     @JsonProperty("ToBeRemovedOn")
-    public final Integer toBeRemovedOn;
+    public final Long toBeRemovedOn;
     @JsonProperty("UpdatedDateTime")
-    public final Integer updatedDateTime;
+    public final Long updatedDateTime;
     @JsonProperty("WillBeRemoved")
     public final Boolean willBeRemoved;
 
@@ -90,7 +90,7 @@ public class MatchGame {
             final FullTimeHdp fullTimeHdp, 
             final FullTimeOneXTwo fullTimeOneXTwo, 
             final FullTimeOu fullTimeOu, 
-            final Integer gameId, 
+            final Long gameId, 
             final HalfTimeHdp halfTimeHdp, 
             final HalfTimeOneXTwo halfTimeOneXTwo, 
             final HalfTimeOu halfTimeOu, 
@@ -102,11 +102,11 @@ public class MatchGame {
             final String leagueName, 
             final String marketType, 
             final Integer marketTypeId, 
-            final Integer matchId, 
+            final Long matchId, 
             final LocalDateTime startTime, 
             final String startsOn, 
-            final Integer toBeRemovedOn, 
-            final Integer updatedDateTime, 
+            final Long toBeRemovedOn, 
+            final Long updatedDateTime, 
             final Boolean willBeRemoved) {
         this.awayTeam = awayTeam;
         this.expectedLength = expectedLength;

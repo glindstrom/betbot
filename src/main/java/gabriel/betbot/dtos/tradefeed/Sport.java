@@ -23,5 +23,9 @@ public class Sport {
         this.sportsType = sportsType;
     }
 
+    public Sport() {
+        this.matchGames = null;
+        this.sportsType = null;
+    }
     
 }

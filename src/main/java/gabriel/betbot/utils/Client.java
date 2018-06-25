@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.inject.Named;
 import org.apache.http.Header;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -15,6 +16,7 @@ import org.apache.http.impl.client.HttpClientBuilder;
  *
  * @author gabriel
  */
+@Named
 public class Client {
     
     private final CloseableHttpClient client;

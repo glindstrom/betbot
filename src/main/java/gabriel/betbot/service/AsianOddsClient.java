@@ -5,7 +5,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
-import gabriel.betbot.dtos.AccountSummary;
+import gabriel.betbot.dtos.AccountSummaryDto;
+import gabriel.betbot.dtos.tradefeed.TradeFeedDto;
 import gabriel.betbot.utils.Client;
 import gabriel.betbot.utils.JsonMapper;
 import java.io.IOException;
@@ -61,17 +62,24 @@ public class AsianOddsClient {
         this.register(this.login());
     }
     
-    public AccountSummary getAccountSummary() {
+    public AccountSummaryDto getAccountSummary() {
         List<Header> headers = ImmutableList.of(tokenHeader);
         CloseableHttpResponse response = client.doGet(ACCOUNT_SUMMARY_URL, headers);
-        return JsonMapper.jsonToObject(response, AccountSummary.class);
+        return JsonMapper.jsonToObject(response, AccountSummaryDto.class);
+    }
+    
+    public TradeFeedDto getFootballFeeds() {
+         List<Header> headers = ImmutableList.of(tokenHeader);
+         String feedUrl = BASE_URL + "/GetFeeds?marketTypeId=1&SportsType=1&OddsFormat=OO";
+         CloseableHttpResponse response = client.doGet(feedUrl, headers);
+         return JsonMapper.jsonToObject(response, TradeFeedDto.class);
     }
     
     public static void main(String[] args) {
         Client client = new Client();
         AsianOddsClient loginService = new AsianOddsClient(client);
         loginService.loginAndRegister();
-        System.out.println(loginService.getAccountSummary());
+        System.out.println(loginService.getFootballFeeds());
     }
     
     @JsonIgnoreProperties(ignoreUnknown = true)

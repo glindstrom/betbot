@@ -11,14 +11,14 @@ import java.math.BigDecimal;
  * @author gabriel
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class AccountSummary {
+public class AccountSummaryDto {
     
     public final BigDecimal credit;
     public final BigDecimal outstanding;
     public final BigDecimal todayPnL;
 
     @JsonCreator
-    public AccountSummary(@JsonProperty("Credit") final BigDecimal credit, 
+    public AccountSummaryDto(@JsonProperty("Credit") final BigDecimal credit, 
             @JsonProperty("Outstanding") final BigDecimal outstanding, 
             @JsonProperty("TodayPnL") final BigDecimal todayPnL) {
         this.credit = credit;

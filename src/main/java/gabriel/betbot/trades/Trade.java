@@ -1,5 +1,6 @@
 package gabriel.betbot.trades;
 
+import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 import org.joda.time.LocalDateTime;
 
@@ -9,7 +10,7 @@ import org.joda.time.LocalDateTime;
  */
 public class Trade {
 
-    private final Map<String, Odds> bookmakerOdds;
+    private final Map<String, Odds> bookieOdds;
     private final long gameId;
     private final int marketTypeId;
     private final LocalDateTime startTime;
@@ -18,9 +19,10 @@ public class Trade {
     private final String goal;
     private final String homeTeamName;
     private final String awayTeamName;
+    private final Odds trueOdds;
 
     private Trade(final Builder builder) {
-        this.bookmakerOdds = builder.bookmakerOdds;
+        this.bookieOdds = builder.bookmakerOdds;
         this.gameId = builder.gameId;
         this.marketTypeId = builder.marketTypeId;
         this.startTime = builder.startTime;
@@ -29,11 +31,56 @@ public class Trade {
         this.goal = builder.goal;
         this.homeTeamName = builder.homeTeamName;
         this.awayTeamName = builder.awayTeamName;
+        this.trueOdds = builder.trueOdds;
     }
 
+    public Map<String, Odds> getBookieOdds() {
+        return ImmutableMap.copyOf(bookieOdds);
+    }
+
+    public long getGameId() {
+        return gameId;
+    }
+
+    public int getMarketTypeId() {
+        return marketTypeId;
+    }
+
+    public LocalDateTime getStartTime() {
+        return startTime;
+    }
+
+    public boolean isIsFullTime() {
+        return isFullTime;
+    }
+
+    public String getHandicap() {
+        return handicap;
+    }
+
+    public String getGoal() {
+        return goal;
+    }
+
+    public String getHomeTeamName() {
+        return homeTeamName;
+    }
+
+    public String getAwayTeamName() {
+        return awayTeamName;
+    }
+
+    
     @Override
     public String toString() {
-        return homeTeamName + " - " + awayTeamName;
+        StringBuilder sb = new StringBuilder();
+        sb.append(homeTeamName).append(" - ")
+                .append(awayTeamName);
+        sb.append(" ").append(startTime);
+        sb.append(" true odds: ").append(trueOdds);
+        bookieOdds.forEach((k, v) -> sb.append(" ").append(k).append(": ").append(v));
+        
+        return sb.toString();
     }
     
     
@@ -49,9 +96,11 @@ public class Trade {
         private String goal;
         private String homeTeamName;
         private String awayTeamName;
+        private Odds trueOdds;
+
 
         public Builder(final Trade source) {
-            this.bookmakerOdds = source.bookmakerOdds;
+            this.bookmakerOdds = source.bookieOdds;
             this.gameId = source.gameId;
             this.marketTypeId = source.marketTypeId;
             this.startTime = source.startTime;
@@ -60,11 +109,13 @@ public class Trade {
             this.goal = source.goal;
             this.homeTeamName = source.homeTeamName;
             this.awayTeamName = source.awayTeamName;
+            this.trueOdds = source.trueOdds;
         }
 
         public Builder() {
             this.handicap = null;
             this.goal = null;
+            this.trueOdds = null;
         }
 
         public Builder withBookmakerOdds(final Map<String, Odds> bookmakerOdds) {
@@ -109,6 +160,11 @@ public class Trade {
         
         public Builder withAwayTeamName(final String awayTeamName) {
             this.awayTeamName = awayTeamName;
+            return this;
+        }
+        
+        public Builder withTrueOdds(final Odds trueOdds) {
+            this.trueOdds = trueOdds;
             return this;
         }
 

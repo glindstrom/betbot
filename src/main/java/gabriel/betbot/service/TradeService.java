@@ -12,11 +12,15 @@ import gabriel.betbot.utils.Client;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import static java.util.stream.Collectors.toList;
+import java.util.stream.Stream;
 import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -29,23 +33,34 @@ public class TradeService {
     
     private static final Logger LOG = LogManager.getLogger(TradeService.class.getName());
     private static final String PINNACLE = "PIN";
-
+    private static final int NUM_DECIMALS = 3;
+    
     private final AsianOddsClient asianOddsClient;
-
+    
     @Inject
     public TradeService(final AsianOddsClient asianOddsClient) {
         this.asianOddsClient = asianOddsClient;
+    }
+    
+    public void doFootballBets() {
+        TradeFeedDto tradeFeedDto = asianOddsClient.getFootballFeeds();
+        doBets(tradeFeedDto);
+    }
+    
+    public void doBasbetballBets() {
+        TradeFeedDto tradeFeedDto = asianOddsClient.getBasketballFeeds();
+        doBets(tradeFeedDto);
     }
     
     public static void main(String[] args) {
         Client client = new Client();
         AsianOddsClient asianOddsClient = new AsianOddsClient(client);
         TradeService tradeService = new TradeService(asianOddsClient);
-        tradeService.doBets();
+        tradeService.doFootballBets();
+        tradeService.doBasbetballBets();
     }
-
-    public void doBets() {
-        TradeFeedDto tradeFeedDto = asianOddsClient.getFootballFeeds();
+    
+    public void doBets(final TradeFeedDto tradeFeedDto) {
         if (tradeFeedDto.result.sports.isEmpty()) {
             LOG.info("No trades were found at this time");
             return;
@@ -57,11 +72,20 @@ public class TradeService {
                 .filter(trade -> trade.getBookieOdds().containsKey(PINNACLE) && trade.getBookieOdds().keySet().size() > 1)
                 .collect(toList());
         if (trades.isEmpty()) {
-            LOG.info("No potential trades fount at this time");
+            LOG.info("No potential trades found at this time");
         }
-        trades.stream().map(this::addTrueOdds).forEach(System.out::println);
+        List<Trade> edgeTrades = trades.stream()
+                .map(this::addTrueOdds)
+                .map(this::addEdges)
+                .filter(hasEdge())
+                .collect(toList());
+        
+        if (edgeTrades.isEmpty()) {
+            LOG.info("No positive edge trades found at this time");
+        }
+        edgeTrades.forEach(System.out::println);
     }
-
+    
     private List<Trade> tradeFeedToTrades(final List<MatchGame> matchGames) {
         List<Trade> trades = new ArrayList();
         matchGames.stream().forEach((matchGame) -> {
@@ -72,7 +96,7 @@ public class TradeService {
         return ImmutableList.copyOf(trades);
     }
     
-     private Map<String, Odds> extractBookieOdds(final String bookies, final OddsType oddsType) {
+    private Map<String, Odds> extractBookieOdds(final String bookies, final OddsType oddsType) {
         Map<String, Odds> bookieOddsMap = new HashMap();
         String[] stringArray = bookies.split(";");
         for (String s : stringArray) {
@@ -87,37 +111,39 @@ public class TradeService {
         }
         return ImmutableMap.copyOf(bookieOddsMap);
     }
-     
     
     private Odds createOdds(final String bookie, final String[] oddsArray, final OddsType oddsType) {
         Odds.Builder oddsBuilder = new Odds.Builder().withBookie(bookie);
-        switch (oddsType) { 
+        switch (oddsType) {            
             case HANDICAP:
                 oddsBuilder = oddsBuilder.withHomeOdds(new BigDecimal(oddsArray[0]))
-                        .withAwayOdds(new BigDecimal(oddsArray[1]));
+                        .withAwayOdds(new BigDecimal(oddsArray[1]))
+                        .withOddsType(OddsType.HANDICAP);
                 break;
             case OVER_UNDER:
                 oddsBuilder = oddsBuilder.withOverOdds(new BigDecimal(oddsArray[0]))
-                        .withUnderOdds(new BigDecimal(oddsArray[1]));
+                        .withUnderOdds(new BigDecimal(oddsArray[1]))
+                        .withOddsType(OddsType.OVER_UNDER);
                 break;
             case ONE_X_TWO:
                 oddsBuilder = oddsBuilder.withHomeOdds(new BigDecimal(oddsArray[0]))
-                    .withAwayOdds(new BigDecimal(oddsArray[1]))
-                    .withDrawOdds(new BigDecimal(oddsArray[2]));
+                        .withAwayOdds(new BigDecimal(oddsArray[1]))
+                        .withDrawOdds(new BigDecimal(oddsArray[2]))
+                        .withOddsType(OddsType.ONE_X_TWO);
                 break;
             default:
                 throw new AssertionError(oddsType.name());
         }
         return oddsBuilder.build();
     }
-
+    
     private void addHdpTrade(final MatchGame matchGame, final List<Trade> trades, final boolean isFullTime) {
         String bookieOdds = isFullTime ? matchGame.fullTimeHdp.bookieOdds : matchGame.halfTimeHdp.bookieOdds;
         if (Strings.isNullOrEmpty(bookieOdds)) {
             return;
         }
         String handicap = isFullTime ? matchGame.fullTimeHdp.handicap : matchGame.halfTimeHdp.handicap;
-
+        
         Trade trade = getTradeBuilder(matchGame)
                 .withBookmakerOdds(extractBookieOdds(bookieOdds, OddsType.HANDICAP))
                 .withHandicap(handicap)
@@ -125,7 +151,7 @@ public class TradeService {
                 .build();
         trades.add(trade);
     }
-
+    
     private void addOneXTwoTrade(final MatchGame matchGame, final List<Trade> trades, final boolean isFullTime) {
         String bookieOdds = isFullTime ? matchGame.fullTimeOneXTwo.bookieOdds : matchGame.halfTimeOneXTwo.bookieOdds;
         if (Strings.isNullOrEmpty(bookieOdds)) {
@@ -138,7 +164,7 @@ public class TradeService {
                 .build();
         trades.add(trade);
     }
-
+    
     private Trade.Builder getTradeBuilder(final MatchGame matchGame) {
         return new Trade.Builder()
                 .withGameId(matchGame.gameId)
@@ -147,7 +173,7 @@ public class TradeService {
                 .withHomeTeamName(matchGame.homeTeam.name)
                 .withAwayTeamName(matchGame.awayTeam.name);
     }
-
+    
     private void addOuTrade(final MatchGame matchGame, final List<Trade> trades, final boolean isFullTime) {
         String bookieOdds = isFullTime ? matchGame.fullTimeOu.bookieOdds : matchGame.halfTimeOu.bookieOdds;
         if (Strings.isNullOrEmpty(bookieOdds)) {
@@ -166,10 +192,19 @@ public class TradeService {
         Odds trueOdds = calculateTrueOdds(edgeComparisonOdds);
         return new Trade.Builder(trade).withTrueOdds(trueOdds).build();
     }
-
-    private Odds calculateTrueOdds(final Odds odds) {
-        BigDecimal prob1 = BigDecimal.ONE.divide(odds.getOdds1(), 3, BigDecimal.ROUND_HALF_UP);
-        BigDecimal prob2 = BigDecimal.ONE.divide(odds.getOdds2(), 3, BigDecimal.ROUND_HALF_UP);
+    
+    private Trade addEdges(final Trade trade) {
+        Map<String, Odds> bookieOdds = trade.getBookieOdds().values().stream()
+                .map(odds -> addEdge(odds, trade.getTrueOdds()))
+                .collect(Collectors.toMap(Odds::getBookie, Function.identity()));
+        return new Trade.Builder(trade)
+                .withBookmakerOdds(bookieOdds)
+                .build();
+    }
+    
+    static Odds calculateTrueOdds(final Odds odds) {
+        BigDecimal prob1 = BigDecimal.ONE.divide(odds.getOdds1(), NUM_DECIMALS, BigDecimal.ROUND_HALF_UP);
+        BigDecimal prob2 = BigDecimal.ONE.divide(odds.getOdds2(), NUM_DECIMALS, BigDecimal.ROUND_HALF_UP);
         BigDecimal prob3 = odds.getOddsType() == OddsType.ONE_X_TWO ? BigDecimal.ONE.divide(odds.getOddsX(), 3, BigDecimal.ROUND_HALF_UP) : BigDecimal.ZERO;
         BigDecimal margin = prob1.add(prob2).add(prob3).subtract(BigDecimal.ONE);
         BigDecimal weightFactor = odds.getOddsType() == OddsType.ONE_X_TWO ? BigDecimal.valueOf(3) : BigDecimal.valueOf(2);
@@ -183,11 +218,38 @@ public class TradeService {
         return oddsBuilder.build();
     }
     
-    private BigDecimal calculateTrueOddsValue(final BigDecimal margin, final BigDecimal weightFactor, final BigDecimal oddsValue) {
+    private static BigDecimal calculateTrueOddsValue(final BigDecimal margin, final BigDecimal weightFactor, final BigDecimal oddsValue) {
         BigDecimal numerator = weightFactor.multiply(oddsValue);
         BigDecimal denominator = weightFactor.subtract(margin.multiply(oddsValue));
-        return numerator.divide(denominator, 3, RoundingMode.HALF_UP);
+        return numerator.divide(denominator, NUM_DECIMALS, RoundingMode.HALF_UP);
     }
-
-
+    
+    private Odds addEdge(final Odds odds, final Odds trueOdds) {
+        if (odds.getBookie().equals(PINNACLE)) {
+            return odds;
+        }
+        BigDecimal edge1 = calculateEdge(odds.getOdds1(), trueOdds.getOdds1());
+        BigDecimal edge2 = calculateEdge(odds.getOdds2(), trueOdds.getOdds2());
+        
+        Odds.Builder oddsBuilder = new Odds.Builder(odds)
+                .withEdge1(edge1)
+                .withEdge2(edge2);
+        if (odds.getOddsType() == OddsType.ONE_X_TWO) {
+            BigDecimal edgeX = calculateEdge(odds.getOddsX(), trueOdds.getOddsX());
+            oddsBuilder = oddsBuilder.withEdgeX(edgeX);
+        }
+        return oddsBuilder.build();
+    }
+    
+    private BigDecimal calculateEdge(final BigDecimal offeredOdds, final BigDecimal trueOdds) {
+        return offeredOdds.divide(trueOdds, NUM_DECIMALS, BigDecimal.ROUND_HALF_UP).subtract(BigDecimal.ONE);
+    }
+    
+    private Predicate<Trade> hasEdge() {
+        return trade -> trade.getBookieOdds().values().stream()
+                .map(odds -> odds.getEdges())
+                .flatMap(Collection::stream)
+                .anyMatch(bigDecimal -> bigDecimal.compareTo(BigDecimal.valueOf(0.01)) > 0);
+    }
+    
 }

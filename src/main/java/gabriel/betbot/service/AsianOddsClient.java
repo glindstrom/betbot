@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import gabriel.betbot.dtos.AccountSummaryDto;
 import gabriel.betbot.dtos.tradefeed.TradeFeedDto;
+import gabriel.betbot.trades.SportsType;
 import gabriel.betbot.utils.Client;
 import gabriel.betbot.utils.JsonMapper;
 import java.io.IOException;
@@ -34,7 +35,7 @@ public class AsianOddsClient {
     private static final String TOKEN_HEADER_NAME = "AOToken";
     private static final String KEY_HEADER_NAME = "AOKey";
     private static final String ACCOUNT_SUMMARY_URL = BASE_URL + "/GetAccountSummary";
-    
+
     private final Client client;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private Header tokenHeader;
@@ -43,12 +44,12 @@ public class AsianOddsClient {
     public AsianOddsClient(final Client client) {
         this.client = client;
     }
-    
+
     public LoginResponse login() {
         CloseableHttpResponse response = client.doGet(LOGIN_URL);
-        return JsonMapper.jsonToObject(response, LoginResponse.class);    
+        return JsonMapper.jsonToObject(response, LoginResponse.class);
     }
-    
+
     public void register(final LoginResponse loginResponse) {
         String registerUrl = loginResponse.result.url + REGISTER_URL_SUFFIX;
         this.tokenHeader = new BasicHeader(TOKEN_HEADER_NAME, loginResponse.result.token);
@@ -61,36 +62,45 @@ public class AsianOddsClient {
             Logger.getLogger(AsianOddsClient.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-    
+
     public void loginAndRegister() {
         this.register(this.login());
     }
-    
+
     public AccountSummaryDto getAccountSummary() {
         List<Header> headers = ImmutableList.of(tokenHeader);
         CloseableHttpResponse response = client.doGet(ACCOUNT_SUMMARY_URL, headers);
         return JsonMapper.jsonToObject(response, AccountSummaryDto.class);
     }
-    
+
     public TradeFeedDto getFootballFeeds() {
+       return getTradeFeeds(SportsType.FOOTBALL);
+    }
+    
+    public TradeFeedDto getBasketballFeeds() {
+        return getTradeFeeds(SportsType.BASKETBALL);
+    }
+
+    public TradeFeedDto getTradeFeeds(final SportsType sportsType) {
         if (tokenHeader == null) {
             loginAndRegister();
         }
-         List<Header> headers = ImmutableList.of(tokenHeader);
-         String feedUrl = BASE_URL + "/GetFeeds?marketTypeId=1&SportsType=1&OddsFormat=OO";
-         CloseableHttpResponse response = client.doGet(feedUrl, headers);
-         return JsonMapper.jsonToObject(response, TradeFeedDto.class);
+        List<Header> headers = ImmutableList.of(tokenHeader);
+        String feedUrl = BASE_URL + "/GetFeeds?marketTypeId=1&OddsFormat=OO&SportsType=" + sportsType.getId();
+        CloseableHttpResponse response = client.doGet(feedUrl, headers);
+        return JsonMapper.jsonToObject(response, TradeFeedDto.class);
     }
-    
+
     public static void main(String[] args) {
         Client client = new Client();
         AsianOddsClient loginService = new AsianOddsClient(client);
         loginService.loginAndRegister();
         System.out.println(loginService.getFootballFeeds());
     }
-    
+
     @JsonIgnoreProperties(ignoreUnknown = true)
     private static class LoginResponse {
+
         public final Result result;
 
         @JsonCreator
@@ -98,22 +108,22 @@ public class AsianOddsClient {
             this.result = result;
         }
     }
-    
+
     @JsonIgnoreProperties(ignoreUnknown = true)
     private static class Result {
+
         public final String token;
         public final String url;
         public final String key;
 
         @JsonCreator
-        public Result(@JsonProperty("Token") final String token, 
-                @JsonProperty("Url") final String url, 
+        public Result(@JsonProperty("Token") final String token,
+                @JsonProperty("Url") final String url,
                 @JsonProperty("Key") final String key) {
             this.token = token;
             this.url = url;
             this.key = key;
         }
-        
-        
+
     }
 }

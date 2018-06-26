@@ -70,6 +70,12 @@ public class Trade {
         return awayTeamName;
     }
 
+    public Odds getTrueOdds() {
+        return trueOdds;
+    }
+    
+    
+
     
     @Override
     public String toString() {

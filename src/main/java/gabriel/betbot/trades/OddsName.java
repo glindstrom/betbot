@@ -12,7 +12,9 @@ package gabriel.betbot.trades;
 public enum OddsName {
     HOME_ODDS("HomeOdds"),
     AWAY_ODDS("AwayOdds"),
-    DRAW_ODDS("DrawOdds");
+    DRAW_ODDS("DrawOdds"),
+    OVER_ODDS("OverOdds"),
+    UNDER_ODDS("UnderOdds");
     
     private final String name;
 

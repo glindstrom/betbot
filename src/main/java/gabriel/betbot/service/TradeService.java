@@ -5,7 +5,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import gabriel.betbot.dtos.tradefeed.MatchGame;
 import gabriel.betbot.dtos.tradefeed.TradeFeedDto;
+import gabriel.betbot.trades.Bet;
 import gabriel.betbot.trades.Odds;
+import gabriel.betbot.trades.OddsName;
 import gabriel.betbot.trades.OddsType;
 import gabriel.betbot.trades.Trade;
 import gabriel.betbot.utils.Client;
@@ -20,7 +22,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import static java.util.stream.Collectors.toList;
-import java.util.stream.Stream;
 import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -30,38 +31,40 @@ import org.apache.logging.log4j.Logger;
  * @author gabriel
  */
 public class TradeService {
-    
+
     private static final Logger LOG = LogManager.getLogger(TradeService.class.getName());
     private static final String PINNACLE = "PIN";
     private static final int NUM_DECIMALS = 3;
-    
+
     private final AsianOddsClient asianOddsClient;
-    
+
     @Inject
     public TradeService(final AsianOddsClient asianOddsClient) {
         this.asianOddsClient = asianOddsClient;
     }
-    
+
     public void doFootballBets() {
         TradeFeedDto tradeFeedDto = asianOddsClient.getFootballFeeds();
         doBets(tradeFeedDto);
     }
-    
+
     public void doBasbetballBets() {
         TradeFeedDto tradeFeedDto = asianOddsClient.getBasketballFeeds();
         doBets(tradeFeedDto);
     }
-    
+
     public static void main(String[] args) {
         Client client = new Client();
         AsianOddsClient asianOddsClient = new AsianOddsClient(client);
         TradeService tradeService = new TradeService(asianOddsClient);
+        LOG.info("Fetching football odds");
         tradeService.doFootballBets();
+        LOG.info("Fetching basketball odds");
         tradeService.doBasbetballBets();
     }
-    
+
     public void doBets(final TradeFeedDto tradeFeedDto) {
-        if (tradeFeedDto.result.sports.isEmpty()) {
+        if (tradeFeedDto.result == null || tradeFeedDto.result.sports == null || tradeFeedDto.result.sports.isEmpty()) {
             LOG.info("No trades were found at this time");
             return;
         }
@@ -74,18 +77,19 @@ public class TradeService {
         if (trades.isEmpty()) {
             LOG.info("No potential trades found at this time");
         }
-        List<Trade> edgeTrades = trades.stream()
+        List<Bet> bets = trades.stream()
                 .map(this::addTrueOdds)
                 .map(this::addEdges)
-                .filter(hasEdge())
+                .map(trade -> tradeToBets(trade))
+                .flatMap(Collection::stream)
                 .collect(toList());
-        
-        if (edgeTrades.isEmpty()) {
-            LOG.info("No positive edge trades found at this time");
+
+        if (bets.isEmpty()) {
+            LOG.info("No positive edge bets found at this time");
         }
-        edgeTrades.forEach(System.out::println);
+        bets.forEach(System.out::println);
     }
-    
+
     private List<Trade> tradeFeedToTrades(final List<MatchGame> matchGames) {
         List<Trade> trades = new ArrayList();
         matchGames.stream().forEach((matchGame) -> {
@@ -95,7 +99,7 @@ public class TradeService {
         });
         return ImmutableList.copyOf(trades);
     }
-    
+
     private Map<String, Odds> extractBookieOdds(final String bookies, final OddsType oddsType) {
         Map<String, Odds> bookieOddsMap = new HashMap();
         String[] stringArray = bookies.split(";");
@@ -106,15 +110,18 @@ public class TradeService {
                 continue;
             }
             String[] oddsArray = arr[1].split(",");
+            if (oddsArray.length < 2) {
+                continue;
+            }
             Odds odds = createOdds(bookie, oddsArray, oddsType);
             bookieOddsMap.put(bookie, odds);
         }
         return ImmutableMap.copyOf(bookieOddsMap);
     }
-    
+
     private Odds createOdds(final String bookie, final String[] oddsArray, final OddsType oddsType) {
         Odds.Builder oddsBuilder = new Odds.Builder().withBookie(bookie);
-        switch (oddsType) {            
+        switch (oddsType) {
             case HANDICAP:
                 oddsBuilder = oddsBuilder.withHomeOdds(new BigDecimal(oddsArray[0]))
                         .withAwayOdds(new BigDecimal(oddsArray[1]))
@@ -136,35 +143,43 @@ public class TradeService {
         }
         return oddsBuilder.build();
     }
-    
+
     private void addHdpTrade(final MatchGame matchGame, final List<Trade> trades, final boolean isFullTime) {
         String bookieOdds = isFullTime ? matchGame.fullTimeHdp.bookieOdds : matchGame.halfTimeHdp.bookieOdds;
         if (Strings.isNullOrEmpty(bookieOdds)) {
             return;
         }
         String handicap = isFullTime ? matchGame.fullTimeHdp.handicap : matchGame.halfTimeHdp.handicap;
-        
+        Map<String, Odds> bookieOddsMap = extractBookieOdds(bookieOdds, OddsType.HANDICAP);
+        if (bookieOddsMap.isEmpty()) {
+            return;
+        }
         Trade trade = getTradeBuilder(matchGame)
-                .withBookmakerOdds(extractBookieOdds(bookieOdds, OddsType.HANDICAP))
+                .withBookmakerOdds(bookieOddsMap)
                 .withHandicap(handicap)
                 .withIsFullTime(isFullTime)
                 .build();
         trades.add(trade);
     }
-    
+
     private void addOneXTwoTrade(final MatchGame matchGame, final List<Trade> trades, final boolean isFullTime) {
         String bookieOdds = isFullTime ? matchGame.fullTimeOneXTwo.bookieOdds : matchGame.halfTimeOneXTwo.bookieOdds;
         if (Strings.isNullOrEmpty(bookieOdds)) {
             return;
         }
-        
+
+        Map<String, Odds> bookieOddsMap = extractBookieOdds(bookieOdds, OddsType.ONE_X_TWO);
+        if (bookieOddsMap.isEmpty()) {
+            return;
+        }
+
         Trade trade = getTradeBuilder(matchGame)
-                .withBookmakerOdds(extractBookieOdds(bookieOdds, OddsType.ONE_X_TWO))
+                .withBookmakerOdds(bookieOddsMap)
                 .withIsFullTime(isFullTime)
                 .build();
         trades.add(trade);
     }
-    
+
     private Trade.Builder getTradeBuilder(final MatchGame matchGame) {
         return new Trade.Builder()
                 .withGameId(matchGame.gameId)
@@ -173,26 +188,29 @@ public class TradeService {
                 .withHomeTeamName(matchGame.homeTeam.name)
                 .withAwayTeamName(matchGame.awayTeam.name);
     }
-    
+
     private void addOuTrade(final MatchGame matchGame, final List<Trade> trades, final boolean isFullTime) {
         String bookieOdds = isFullTime ? matchGame.fullTimeOu.bookieOdds : matchGame.halfTimeOu.bookieOdds;
         if (Strings.isNullOrEmpty(bookieOdds)) {
             return;
         }
-        
+        Map<String, Odds> bookieOddsMap = extractBookieOdds(bookieOdds, OddsType.OVER_UNDER);
+        if (bookieOddsMap.isEmpty()) {
+            return;
+        }
         Trade trade = getTradeBuilder(matchGame)
-                .withBookmakerOdds(extractBookieOdds(bookieOdds, OddsType.OVER_UNDER))
+                .withBookmakerOdds(bookieOddsMap)
                 .withIsFullTime(isFullTime)
                 .build();
         trades.add(trade);
     }
-    
+
     private Trade addTrueOdds(final Trade trade) {
         Odds edgeComparisonOdds = trade.getBookieOdds().get(PINNACLE);
         Odds trueOdds = calculateTrueOdds(edgeComparisonOdds);
         return new Trade.Builder(trade).withTrueOdds(trueOdds).build();
     }
-    
+
     private Trade addEdges(final Trade trade) {
         Map<String, Odds> bookieOdds = trade.getBookieOdds().values().stream()
                 .map(odds -> addEdge(odds, trade.getTrueOdds()))
@@ -201,7 +219,7 @@ public class TradeService {
                 .withBookmakerOdds(bookieOdds)
                 .build();
     }
-    
+
     static Odds calculateTrueOdds(final Odds odds) {
         BigDecimal prob1 = BigDecimal.ONE.divide(odds.getOdds1(), NUM_DECIMALS, BigDecimal.ROUND_HALF_UP);
         BigDecimal prob2 = BigDecimal.ONE.divide(odds.getOdds2(), NUM_DECIMALS, BigDecimal.ROUND_HALF_UP);
@@ -217,20 +235,20 @@ public class TradeService {
         }
         return oddsBuilder.build();
     }
-    
+
     private static BigDecimal calculateTrueOddsValue(final BigDecimal margin, final BigDecimal weightFactor, final BigDecimal oddsValue) {
         BigDecimal numerator = weightFactor.multiply(oddsValue);
         BigDecimal denominator = weightFactor.subtract(margin.multiply(oddsValue));
         return numerator.divide(denominator, NUM_DECIMALS, RoundingMode.HALF_UP);
     }
-    
+
     private Odds addEdge(final Odds odds, final Odds trueOdds) {
         if (odds.getBookie().equals(PINNACLE)) {
             return odds;
         }
         BigDecimal edge1 = calculateEdge(odds.getOdds1(), trueOdds.getOdds1());
         BigDecimal edge2 = calculateEdge(odds.getOdds2(), trueOdds.getOdds2());
-        
+
         Odds.Builder oddsBuilder = new Odds.Builder(odds)
                 .withEdge1(edge1)
                 .withEdge2(edge2);
@@ -240,16 +258,69 @@ public class TradeService {
         }
         return oddsBuilder.build();
     }
-    
+
     private BigDecimal calculateEdge(final BigDecimal offeredOdds, final BigDecimal trueOdds) {
         return offeredOdds.divide(trueOdds, NUM_DECIMALS, BigDecimal.ROUND_HALF_UP).subtract(BigDecimal.ONE);
     }
-    
+
     private Predicate<Trade> hasEdge() {
         return trade -> trade.getBookieOdds().values().stream()
                 .map(odds -> odds.getEdges())
                 .flatMap(Collection::stream)
                 .anyMatch(bigDecimal -> bigDecimal.compareTo(BigDecimal.valueOf(0.01)) > 0);
     }
-    
+
+    private static List<Bet> tradesToBets(final List<Trade> trades) {
+        List<Bet> bets = new ArrayList();
+        trades.forEach(trade -> bets.addAll(tradeToBets(trade)));
+        return ImmutableList.copyOf(bets);
+    }
+
+    private static List<Bet> tradeToBets(final Trade trade) {
+        return trade.getBookieOdds().values().stream()
+                .map(odds -> oddsToBets(odds, trade))
+                .collect(Collectors.toList())
+                .stream()
+                .flatMap(Collection::stream)
+                .collect(Collectors.toList());
+
+    }
+
+    private static List<Bet> oddsToBets(final Odds odds, final Trade trade) {
+        List<Bet> bets = new ArrayList();
+        OddsName odds1Name = odds.getOddsType() == OddsType.HANDICAP ? OddsName.OVER_ODDS : OddsName.HOME_ODDS;
+        OddsName odds2Name = odds.getOddsType() == OddsType.HANDICAP ? OddsName.UNDER_ODDS : OddsName.AWAY_ODDS;
+        bets.add(createBet(trade, odds, odds1Name));
+        bets.add(createBet(trade, odds, odds2Name));
+        if (odds.getOddsType() == OddsType.ONE_X_TWO) {
+            bets.add(createBet(trade, odds, OddsName.DRAW_ODDS));
+        }
+        return bets;
+    }
+
+    private static Bet createBet(final Trade trade, final Odds odds, final OddsName oddsName) {
+        String description = null;
+        if (trade.getHandicap() != null) {
+            description = trade.getHandicap();
+        } else if (trade.getGoal() != null) {
+            description = trade.getGoal();
+        }
+        return new Bet.Builder()
+                .withHomeTeamName(trade.getHomeTeamName())
+                .withAwayTeamName(trade.getAwayTeamName())
+                .withGameId(trade.getGameId())
+                .withStartTime(trade.getStartTime())
+                .withIsFullTime(trade.isIsFullTime())
+                .withOdds(odds.getOdds(oddsName))
+                .withEdge(odds.getEdge(oddsName))
+                .withOddsType(odds.getOddsType())
+                .withOddsName(oddsName)
+                .withBookies(ImmutableList.of(odds.getBookie()))
+                .withTrueOdds(trade.getTrueOdds().getOdds1())
+                .withPinnacleOdds(trade.getBookieOdds().get(PINNACLE).getOdds(oddsName))
+                .withBetDescription(description)
+                .build();
+
+    }
+
 }

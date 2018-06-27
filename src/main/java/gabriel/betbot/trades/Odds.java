@@ -3,8 +3,9 @@ package gabriel.betbot.trades;
 import com.google.common.collect.ImmutableList;
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  *
@@ -20,6 +21,8 @@ public class Odds {
     private final BigDecimal edgeX;
     private final OddsType oddsType;
     private final String bookie;
+    private final Map<OddsName, BigDecimal> oddsNameToOdds;
+    private final Map<OddsName, BigDecimal> oddsNameToEdge;
 
     private Odds(final Builder builder) {
         this.odds1 = builder.odds1;
@@ -30,6 +33,28 @@ public class Odds {
         this.edge1 = builder.edge1;
         this.edge2 = builder.edge2;
         this.edgeX = builder.edgeX;
+        this.oddsNameToOdds = new EnumMap(OddsName.class);
+        this.oddsNameToEdge = new EnumMap(OddsName.class);
+        addOddsNamesToMap();
+        addEdgesToMap();
+    }
+
+    private void addOddsNamesToMap() {
+        oddsNameToOdds.put(OddsName.HOME_ODDS, odds1);
+        oddsNameToOdds.put(OddsName.AWAY_ODDS, odds2);
+        oddsNameToOdds.put(OddsName.OVER_ODDS, odds1);
+        oddsNameToOdds.put(OddsName.UNDER_ODDS, odds2);
+        if (oddsX != null) {
+            oddsNameToOdds.put(OddsName.DRAW_ODDS, oddsX);
+        }
+    }
+
+    private void addEdgesToMap() {
+        oddsNameToEdge.put(OddsName.HOME_ODDS, edge1);
+        oddsNameToEdge.put(OddsName.AWAY_ODDS, edge2);
+        oddsNameToEdge.put(OddsName.OVER_ODDS, edge1);
+        oddsNameToEdge.put(OddsName.UNDER_ODDS, edge2);
+        oddsNameToEdge.put(OddsName.DRAW_ODDS, edgeX);
     }
 
     @Override
@@ -44,7 +69,7 @@ public class Odds {
         if (oddsType == OddsType.ONE_X_TWO) {
             s += ", edgeX: " + edgeX;
         }
-        
+
         return s;
     }
 
@@ -98,6 +123,14 @@ public class Odds {
 
     public BigDecimal getEdgeX() {
         return edgeX;
+    }
+
+    public BigDecimal getOdds(OddsName oddsName) {
+        return oddsNameToOdds.get(oddsName);
+    }
+    
+    public BigDecimal getEdge(OddsName oddsName) {
+        return oddsNameToEdge.get(oddsName);
     }
 
     public List<BigDecimal> getEdges() {

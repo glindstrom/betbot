@@ -1,5 +1,6 @@
 package gabriel.betbot.trades;
 
+import com.google.common.collect.ImmutableList;
 import java.math.BigDecimal;
 import java.util.List;
 import org.joda.time.LocalDateTime;
@@ -39,6 +40,60 @@ public class Bet {
         this.edge = builder.edge;
         this.betDescription = builder.betDescription;
     }
+
+    public BigDecimal getOdds() {
+        return odds;
+    }
+
+    public BigDecimal getTrueOdds() {
+        return trueOdds;
+    }
+
+    public BigDecimal getPinnacleOdds() {
+        return pinnacleOdds;
+    }
+
+    public List<String> getBookies() {
+        return ImmutableList.copyOf(bookies);
+    }
+
+    public OddsType getOddsType() {
+        return oddsType;
+    }
+
+    public OddsName getOddsName() {
+        return oddsName;
+    }
+
+    public BigDecimal getEdge() {
+        return edge;
+    }
+
+    public boolean isIsFullTime() {
+        return isFullTime;
+    }
+
+    public String getHomeTeamName() {
+        return homeTeamName;
+    }
+
+    public String getAwayTeamName() {
+        return awayTeamName;
+    }
+
+    public String getBetDescription() {
+        return betDescription;
+    }
+
+    public LocalDateTime getStartTime() {
+        return startTime;
+    }
+
+    public long getGameId() {
+        return gameId;
+    }
+    
+    
 
     @Override
     public String toString() {

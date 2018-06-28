@@ -82,12 +82,48 @@ public class TradeService {
                 .map(this::addEdges)
                 .map(trade -> tradeToBets(trade))
                 .flatMap(Collection::stream)
+                .filter(hasPositiveEdge())
                 .collect(toList());
 
-        if (bets.isEmpty()) {
+        List<Bet> mergedBetsList = new ArrayList();
+        bets.forEach(bet -> {
+            Bet sameBet = getBetWithSameOdds(bet, mergedBetsList);
+            if (sameBet != null) {
+                Bet mergedBet = mergeBets(bet, sameBet);
+                mergedBetsList.add(mergedBet);
+            } else {
+                mergedBetsList.add(bet);
+            }
+        });
+
+        if (mergedBetsList.isEmpty()) {
             LOG.info("No positive edge bets found at this time");
         }
-        bets.forEach(System.out::println);
+        mergedBetsList.forEach(System.out::println);
+    }
+    
+    private static Bet mergeBets(final Bet bet1, final Bet bet2) {
+        List<String> bookies = new ArrayList();
+        bookies.addAll(bet1.getBookies());
+        bookies.addAll(bet2.getBookies());
+        return new Bet.Builder(bet1)
+                .withBookies(bookies)
+                .build();
+    }
+
+    private static Bet getBetWithSameOdds(final Bet bet, final List<Bet> bets) {
+        return bets.stream()
+                .filter(sameOddsForSameBet(bet))
+                .findAny()
+                .orElse(null);
+    }
+
+    private static Predicate<Bet> sameOddsForSameBet(Bet otherBet) {
+        return bet -> {
+            return bet.getOdds().compareTo(otherBet.getOdds()) == 0
+                    && bet.getGameId() == otherBet.getGameId()
+                    && bet.getOddsName() == otherBet.getOddsName();
+        };
     }
 
     private List<Trade> tradeFeedToTrades(final List<MatchGame> matchGames) {
@@ -263,17 +299,8 @@ public class TradeService {
         return offeredOdds.divide(trueOdds, NUM_DECIMALS, BigDecimal.ROUND_HALF_UP).subtract(BigDecimal.ONE);
     }
 
-    private Predicate<Trade> hasEdge() {
-        return trade -> trade.getBookieOdds().values().stream()
-                .map(odds -> odds.getEdges())
-                .flatMap(Collection::stream)
-                .anyMatch(bigDecimal -> bigDecimal.compareTo(BigDecimal.valueOf(0.01)) > 0);
-    }
-
-    private static List<Bet> tradesToBets(final List<Trade> trades) {
-        List<Bet> bets = new ArrayList();
-        trades.forEach(trade -> bets.addAll(tradeToBets(trade)));
-        return ImmutableList.copyOf(bets);
+    private Predicate<Bet> hasPositiveEdge() {
+        return bet -> bet.getEdge().compareTo(BigDecimal.valueOf(0.01)) > 0;
     }
 
     private static List<Bet> tradeToBets(final Trade trade) {
@@ -316,7 +343,7 @@ public class TradeService {
                 .withOddsType(odds.getOddsType())
                 .withOddsName(oddsName)
                 .withBookies(ImmutableList.of(odds.getBookie()))
-                .withTrueOdds(trade.getTrueOdds().getOdds1())
+                .withTrueOdds(trade.getTrueOdds().getOdds(oddsName))
                 .withPinnacleOdds(trade.getBookieOdds().get(PINNACLE).getOdds(oddsName))
                 .withBetDescription(description)
                 .build();

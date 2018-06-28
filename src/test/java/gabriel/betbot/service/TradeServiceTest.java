@@ -26,10 +26,14 @@ public class TradeServiceTest {
         BigDecimal expectedTrueOdds2 = BigDecimal.valueOf(7.513);
         BigDecimal expectedTrueOddsX = BigDecimal.valueOf(5.016);
 
-        assertTrue("Odds1 were incorrect, got " + trueOdds.getOdds1(), trueOdds.getOdds1().compareTo(expectedTrueOdds1) == 0);
-        assertTrue("Odds2 were incorrect, got " + trueOdds.getOdds2(), trueOdds.getOdds2().compareTo(expectedTrueOdds2) == 0);
-        assertTrue("OddsX were incorrect, got " + trueOdds.getOddsX(), trueOdds.getOddsX().compareTo(expectedTrueOddsX) == 0);
+        assertTrue("Odds1 were incorrect, got " + round(trueOdds.getOdds1()), round(trueOdds.getOdds1()).compareTo(expectedTrueOdds1) == 0);
+        assertTrue("Odds2 were incorrect, got " + trueOdds.getOdds2(), round(trueOdds.getOdds2()).compareTo(expectedTrueOdds2) == 0);
+        assertTrue("OddsX were incorrect, got " + trueOdds.getOddsX(), round(trueOdds.getOddsX()).compareTo(expectedTrueOddsX) == 0);
 
+    }
+    
+    public static BigDecimal round(final BigDecimal odds) {
+        return odds.setScale(3, BigDecimal.ROUND_HALF_UP);
     }
 
     @Test
@@ -43,7 +47,7 @@ public class TradeServiceTest {
         Odds trueOdds = TradeService.calculateTrueOdds(offeredOdds);
         BigDecimal expectedTrueOdds1 = BigDecimal.valueOf(1.901);
 
-        assertTrue("Odds1 were incorrect, got " + trueOdds.getOdds1(), trueOdds.getOdds1().compareTo(expectedTrueOdds1) == 0);
+        assertTrue("Odds1 were incorrect, got " + round(trueOdds.getOdds1()), round(trueOdds.getOdds1()).compareTo(expectedTrueOdds1) == 0);
     }
     
     @Test
@@ -52,7 +56,7 @@ public class TradeServiceTest {
         BigDecimal trueOdds = BigDecimal.valueOf(1.901);
         BigDecimal expectedEdge = BigDecimal.valueOf(0.0258);
         
-        BigDecimal calculatedEdge = TradeService.calculateEdge(offeredOdds, trueOdds);
+        BigDecimal calculatedEdge = TradeService.calculateEdge(offeredOdds, trueOdds).setScale(4, BigDecimal.ROUND_HALF_UP);
         assertTrue("Edge was incorrect, got " + calculatedEdge,expectedEdge.compareTo(calculatedEdge) == 0);
     } 
 

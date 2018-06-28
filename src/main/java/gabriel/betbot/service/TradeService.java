@@ -290,7 +290,7 @@ public class TradeService {
     private static BigDecimal calculateTrueOddsValue(final BigDecimal margin, final BigDecimal weightFactor, final BigDecimal oddsValue) {
         BigDecimal numerator = weightFactor.multiply(oddsValue);
         BigDecimal denominator = weightFactor.subtract(margin.multiply(oddsValue));
-        return numerator.divide(denominator, NUM_DECIMALS_ODDS, RoundingMode.HALF_UP).setScale(NUM_DECIMALS_ODDS, BigDecimal.ROUND_HALF_UP);
+        return numerator.divide(denominator, NUM_DECIMALS_CALCULATON, RoundingMode.HALF_UP);
     }
 
     private Odds addEdge(final Odds odds, final Odds trueOdds) {

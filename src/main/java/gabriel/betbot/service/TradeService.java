@@ -38,7 +38,8 @@ public class TradeService {
     private static final Logger LOG = LogManager.getLogger(TradeService.class.getName());
     private static final String PINNACLE = "PIN";
     private static final int NUM_DECIMALS_ODDS = 3;
-    private static final int NUM_DECIMALS = 4;
+    private static final int NUM_DECIMALS_EDGE = 4;
+    private static final int NUM_DECIMALS_CALCULATON = 10;
     private static final Hours CLOSE_TO_START_HOURS = Hours.TWO;
     private static final Hours NORMAL_HOURS = Hours.SEVEN;
     private static final Hours EARLY_HOURS = Hours.hours(10);
@@ -271,9 +272,9 @@ public class TradeService {
     }
 
     static Odds calculateTrueOdds(final Odds odds) {
-        BigDecimal prob1 = BigDecimal.ONE.divide(odds.getOdds1(), NUM_DECIMALS, BigDecimal.ROUND_HALF_UP);
-        BigDecimal prob2 = BigDecimal.ONE.divide(odds.getOdds2(), NUM_DECIMALS, BigDecimal.ROUND_HALF_UP);
-        BigDecimal prob3 = odds.getOddsType() == OddsType.ONE_X_TWO ? BigDecimal.ONE.divide(odds.getOddsX(), NUM_DECIMALS, BigDecimal.ROUND_HALF_UP) : BigDecimal.ZERO;
+        BigDecimal prob1 = BigDecimal.ONE.divide(odds.getOdds1(), NUM_DECIMALS_CALCULATON, BigDecimal.ROUND_HALF_UP);
+        BigDecimal prob2 = BigDecimal.ONE.divide(odds.getOdds2(), NUM_DECIMALS_CALCULATON, BigDecimal.ROUND_HALF_UP);
+        BigDecimal prob3 = odds.getOddsType() == OddsType.ONE_X_TWO ? BigDecimal.ONE.divide(odds.getOddsX(), NUM_DECIMALS_CALCULATON, BigDecimal.ROUND_HALF_UP) : BigDecimal.ZERO;
         BigDecimal margin = prob1.add(prob2).add(prob3).subtract(BigDecimal.ONE);
         BigDecimal weightFactor = odds.getOddsType() == OddsType.ONE_X_TWO ? BigDecimal.valueOf(3) : BigDecimal.valueOf(2);
         BigDecimal trueOddsValue1 = calculateTrueOddsValue(margin, weightFactor, odds.getOdds1());
@@ -289,7 +290,7 @@ public class TradeService {
     private static BigDecimal calculateTrueOddsValue(final BigDecimal margin, final BigDecimal weightFactor, final BigDecimal oddsValue) {
         BigDecimal numerator = weightFactor.multiply(oddsValue);
         BigDecimal denominator = weightFactor.subtract(margin.multiply(oddsValue));
-        return numerator.divide(denominator, NUM_DECIMALS_ODDS, RoundingMode.HALF_UP);
+        return numerator.divide(denominator, NUM_DECIMALS_ODDS, RoundingMode.HALF_UP).setScale(NUM_DECIMALS_ODDS, BigDecimal.ROUND_HALF_UP);
     }
 
     private Odds addEdge(final Odds odds, final Odds trueOdds) {
@@ -310,7 +311,8 @@ public class TradeService {
     }
 
     static BigDecimal calculateEdge(final BigDecimal offeredOdds, final BigDecimal trueOdds) {
-        return offeredOdds.divide(trueOdds, NUM_DECIMALS, BigDecimal.ROUND_HALF_UP).subtract(BigDecimal.ONE);
+        BigDecimal edge = offeredOdds.divide(trueOdds, NUM_DECIMALS_CALCULATON, BigDecimal.ROUND_HALF_UP).subtract(BigDecimal.ONE);
+        return edge.setScale(NUM_DECIMALS_EDGE, BigDecimal.ROUND_HALF_UP);
     }
 
     private static Predicate<Bet> hasPositiveEdge() {

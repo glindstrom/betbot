@@ -30,7 +30,7 @@ public class TradeServiceTest {
 
         Odds trueOdds = TradeService.calculateTrueOdds(offeredOdds);
         BigDecimal expectedTrueOdds1 = BigDecimal.valueOf(1.498);
-        BigDecimal expectedTrueOdds2 = BigDecimal.valueOf(7.511);
+        BigDecimal expectedTrueOdds2 = BigDecimal.valueOf(7.513);
         BigDecimal expectedTrueOddsX = BigDecimal.valueOf(5.016);
 
         assertTrue("Odds1 were incorrect, got " + trueOdds.getOdds1(), trueOdds.getOdds1().compareTo(expectedTrueOdds1) == 0);

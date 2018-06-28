@@ -11,6 +11,7 @@ import gabriel.betbot.trades.OddsName;
 import gabriel.betbot.trades.OddsType;
 import gabriel.betbot.trades.Trade;
 import gabriel.betbot.utils.Client;
+import gabriel.betbot.utils.JsonMapper;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -36,7 +37,8 @@ public class TradeService {
 
     private static final Logger LOG = LogManager.getLogger(TradeService.class.getName());
     private static final String PINNACLE = "PIN";
-    private static final int NUM_DECIMALS = 3;
+    private static final int NUM_DECIMALS_ODDS = 3;
+    private static final int NUM_DECIMALS = 4;
     private static final Hours CLOSE_TO_START_HOURS = Hours.TWO;
     private static final Hours NORMAL_HOURS = Hours.SEVEN;
     private static final Hours EARLY_HOURS = Hours.hours(10);
@@ -53,6 +55,7 @@ public class TradeService {
 
     public void doFootballBets() {
         TradeFeedDto tradeFeedDto = asianOddsClient.getFootballFeeds();
+        JsonMapper.writeObjectToFile(tradeFeedDto, "/home/gabriel/Documents/Repos/betbot/ResponseData/response.json");
         doBets(tradeFeedDto);
     }
 
@@ -154,7 +157,7 @@ public class TradeService {
                 continue;
             }
             String[] oddsArray = arr[1].split(",");
-            if (oddsArray.length < 2) {
+            if (oddsArray.length < 2 || (oddsType == OddsType.ONE_X_TWO && oddsArray.length < 3)) {
                 continue;
             }
             Odds odds = createOdds(bookie, oddsArray, oddsType);
@@ -165,32 +168,28 @@ public class TradeService {
 
     private Odds createOdds(final String bookie, final String[] oddsArray, final OddsType oddsType) {
         Odds.Builder oddsBuilder = new Odds.Builder().withBookie(bookie);
-        try {
-            switch (oddsType) {
-                case HANDICAP:
-                    oddsBuilder = oddsBuilder.withHomeOdds(new BigDecimal(oddsArray[0]))
-                            .withAwayOdds(new BigDecimal(oddsArray[1]))
-                            .withOddsType(OddsType.HANDICAP);
-                    break;
-                case OVER_UNDER:
-                    oddsBuilder = oddsBuilder.withOverOdds(new BigDecimal(oddsArray[0]))
-                            .withUnderOdds(new BigDecimal(oddsArray[1]))
-                            .withOddsType(OddsType.OVER_UNDER);
-                    break;
-                case ONE_X_TWO:
-                    oddsBuilder = oddsBuilder.withHomeOdds(new BigDecimal(oddsArray[0]))
-                            .withAwayOdds(new BigDecimal(oddsArray[1]))
-                            .withDrawOdds(new BigDecimal(oddsArray[2]))
-                            .withOddsType(OddsType.ONE_X_TWO);
-                    break;
-                default:
-                    throw new AssertionError(oddsType.name());
-            }
-            return oddsBuilder.build();
-        } catch (ArrayIndexOutOfBoundsException ex) {
-            LOG.error("Error creating odds, oddsArray {}, bookie: {}, oddsType: {}", oddsArray, bookie, oddsType);
-            throw ex;
+
+        switch (oddsType) {
+            case HANDICAP:
+                oddsBuilder = oddsBuilder.withHomeOdds(new BigDecimal(oddsArray[0]))
+                        .withAwayOdds(new BigDecimal(oddsArray[1]))
+                        .withOddsType(OddsType.HANDICAP);
+                break;
+            case OVER_UNDER:
+                oddsBuilder = oddsBuilder.withOverOdds(new BigDecimal(oddsArray[0]))
+                        .withUnderOdds(new BigDecimal(oddsArray[1]))
+                        .withOddsType(OddsType.OVER_UNDER);
+                break;
+            case ONE_X_TWO:
+                oddsBuilder = oddsBuilder.withHomeOdds(new BigDecimal(oddsArray[0]))
+                        .withAwayOdds(new BigDecimal(oddsArray[1]))
+                        .withDrawOdds(new BigDecimal(oddsArray[2]))
+                        .withOddsType(OddsType.ONE_X_TWO);
+                break;
+            default:
+                throw new AssertionError(oddsType.name());
         }
+        return oddsBuilder.build();
     }
 
     private void addHdpTrade(final MatchGame matchGame, final List<Trade> trades, final boolean isFullTime) {
@@ -274,7 +273,7 @@ public class TradeService {
     static Odds calculateTrueOdds(final Odds odds) {
         BigDecimal prob1 = BigDecimal.ONE.divide(odds.getOdds1(), NUM_DECIMALS, BigDecimal.ROUND_HALF_UP);
         BigDecimal prob2 = BigDecimal.ONE.divide(odds.getOdds2(), NUM_DECIMALS, BigDecimal.ROUND_HALF_UP);
-        BigDecimal prob3 = odds.getOddsType() == OddsType.ONE_X_TWO ? BigDecimal.ONE.divide(odds.getOddsX(), 3, BigDecimal.ROUND_HALF_UP) : BigDecimal.ZERO;
+        BigDecimal prob3 = odds.getOddsType() == OddsType.ONE_X_TWO ? BigDecimal.ONE.divide(odds.getOddsX(), NUM_DECIMALS, BigDecimal.ROUND_HALF_UP) : BigDecimal.ZERO;
         BigDecimal margin = prob1.add(prob2).add(prob3).subtract(BigDecimal.ONE);
         BigDecimal weightFactor = odds.getOddsType() == OddsType.ONE_X_TWO ? BigDecimal.valueOf(3) : BigDecimal.valueOf(2);
         BigDecimal trueOddsValue1 = calculateTrueOddsValue(margin, weightFactor, odds.getOdds1());
@@ -290,7 +289,7 @@ public class TradeService {
     private static BigDecimal calculateTrueOddsValue(final BigDecimal margin, final BigDecimal weightFactor, final BigDecimal oddsValue) {
         BigDecimal numerator = weightFactor.multiply(oddsValue);
         BigDecimal denominator = weightFactor.subtract(margin.multiply(oddsValue));
-        return numerator.divide(denominator, NUM_DECIMALS, RoundingMode.HALF_UP);
+        return numerator.divide(denominator, NUM_DECIMALS_ODDS, RoundingMode.HALF_UP);
     }
 
     private Odds addEdge(final Odds odds, final Odds trueOdds) {
@@ -310,7 +309,7 @@ public class TradeService {
         return oddsBuilder.build();
     }
 
-    private static BigDecimal calculateEdge(final BigDecimal offeredOdds, final BigDecimal trueOdds) {
+    static BigDecimal calculateEdge(final BigDecimal offeredOdds, final BigDecimal trueOdds) {
         return offeredOdds.divide(trueOdds, NUM_DECIMALS, BigDecimal.ROUND_HALF_UP).subtract(BigDecimal.ONE);
     }
 

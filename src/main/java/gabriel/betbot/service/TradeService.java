@@ -25,6 +25,8 @@ import static java.util.stream.Collectors.toList;
 import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.joda.time.Hours;
+import org.joda.time.LocalDateTime;
 
 /**
  *
@@ -35,6 +37,12 @@ public class TradeService {
     private static final Logger LOG = LogManager.getLogger(TradeService.class.getName());
     private static final String PINNACLE = "PIN";
     private static final int NUM_DECIMALS = 3;
+    private static final Hours CLOSE_TO_START_HOURS = Hours.TWO;
+    private static final Hours NORMAL_HOURS = Hours.SEVEN;
+    private static final Hours EARLY_HOURS = Hours.hours(10);
+    private static final BigDecimal MIN_EDGE_CLOSE_TO_START = BigDecimal.valueOf(0.01);
+    private static final BigDecimal MIN_EDGE_NORMAL = BigDecimal.valueOf(0.02);
+    private static final BigDecimal MIN_EDGE_EARLY = BigDecimal.valueOf(0.04);
 
     private final AsianOddsClient asianOddsClient;
 
@@ -101,7 +109,7 @@ public class TradeService {
         }
         mergedBetsList.forEach(System.out::println);
     }
-    
+
     private static Bet mergeBets(final Bet bet1, final Bet bet2) {
         List<String> bookies = new ArrayList();
         bookies.addAll(bet1.getBookies());
@@ -157,27 +165,32 @@ public class TradeService {
 
     private Odds createOdds(final String bookie, final String[] oddsArray, final OddsType oddsType) {
         Odds.Builder oddsBuilder = new Odds.Builder().withBookie(bookie);
-        switch (oddsType) {
-            case HANDICAP:
-                oddsBuilder = oddsBuilder.withHomeOdds(new BigDecimal(oddsArray[0]))
-                        .withAwayOdds(new BigDecimal(oddsArray[1]))
-                        .withOddsType(OddsType.HANDICAP);
-                break;
-            case OVER_UNDER:
-                oddsBuilder = oddsBuilder.withOverOdds(new BigDecimal(oddsArray[0]))
-                        .withUnderOdds(new BigDecimal(oddsArray[1]))
-                        .withOddsType(OddsType.OVER_UNDER);
-                break;
-            case ONE_X_TWO:
-                oddsBuilder = oddsBuilder.withHomeOdds(new BigDecimal(oddsArray[0]))
-                        .withAwayOdds(new BigDecimal(oddsArray[1]))
-                        .withDrawOdds(new BigDecimal(oddsArray[2]))
-                        .withOddsType(OddsType.ONE_X_TWO);
-                break;
-            default:
-                throw new AssertionError(oddsType.name());
+        try {
+            switch (oddsType) {
+                case HANDICAP:
+                    oddsBuilder = oddsBuilder.withHomeOdds(new BigDecimal(oddsArray[0]))
+                            .withAwayOdds(new BigDecimal(oddsArray[1]))
+                            .withOddsType(OddsType.HANDICAP);
+                    break;
+                case OVER_UNDER:
+                    oddsBuilder = oddsBuilder.withOverOdds(new BigDecimal(oddsArray[0]))
+                            .withUnderOdds(new BigDecimal(oddsArray[1]))
+                            .withOddsType(OddsType.OVER_UNDER);
+                    break;
+                case ONE_X_TWO:
+                    oddsBuilder = oddsBuilder.withHomeOdds(new BigDecimal(oddsArray[0]))
+                            .withAwayOdds(new BigDecimal(oddsArray[1]))
+                            .withDrawOdds(new BigDecimal(oddsArray[2]))
+                            .withOddsType(OddsType.ONE_X_TWO);
+                    break;
+                default:
+                    throw new AssertionError(oddsType.name());
+            }
+            return oddsBuilder.build();
+        } catch (ArrayIndexOutOfBoundsException ex) {
+            LOG.error("Error creating odds, oddsArray {}, bookie: {}, oddsType: {}", oddsArray, bookie, oddsType);
+            throw ex;
         }
-        return oddsBuilder.build();
     }
 
     private void addHdpTrade(final MatchGame matchGame, final List<Trade> trades, final boolean isFullTime) {
@@ -234,9 +247,11 @@ public class TradeService {
         if (bookieOddsMap.isEmpty()) {
             return;
         }
+        String goal = isFullTime ? matchGame.fullTimeOu.goal : matchGame.halfTimeOu.goal;
         Trade trade = getTradeBuilder(matchGame)
                 .withBookmakerOdds(bookieOddsMap)
                 .withIsFullTime(isFullTime)
+                .withGoal(goal)
                 .build();
         trades.add(trade);
     }
@@ -295,12 +310,46 @@ public class TradeService {
         return oddsBuilder.build();
     }
 
-    private BigDecimal calculateEdge(final BigDecimal offeredOdds, final BigDecimal trueOdds) {
+    private static BigDecimal calculateEdge(final BigDecimal offeredOdds, final BigDecimal trueOdds) {
         return offeredOdds.divide(trueOdds, NUM_DECIMALS, BigDecimal.ROUND_HALF_UP).subtract(BigDecimal.ONE);
     }
 
-    private Predicate<Bet> hasPositiveEdge() {
-        return bet -> bet.getEdge().compareTo(BigDecimal.valueOf(0.01)) > 0;
+    private static Predicate<Bet> hasPositiveEdge() {
+        return bet -> {
+            return hasEdgeCloseToStart(bet)
+                    || hasNormalEdge(bet)
+                    || hasEarlyEdge(bet);
+        };
+    }
+
+    private static boolean hasEdgeCloseToStart(final Bet bet) {
+        if (!startsInLessThanNHours(bet.getStartTime(), CLOSE_TO_START_HOURS)) {
+            return false;
+        }
+        return edgeIsGreaterThan(bet.getEdge(), MIN_EDGE_CLOSE_TO_START);
+    }
+
+    private static boolean hasNormalEdge(final Bet bet) {
+        if (!startsInLessThanNHours(bet.getStartTime(), NORMAL_HOURS)) {
+            return false;
+        }
+        return edgeIsGreaterThan(bet.getEdge(), MIN_EDGE_NORMAL);
+    }
+
+    private static boolean hasEarlyEdge(final Bet bet) {
+        if (!startsInLessThanNHours(bet.getStartTime(), EARLY_HOURS)) {
+            return false;
+        }
+        return edgeIsGreaterThan(bet.getEdge(), MIN_EDGE_EARLY);
+    }
+
+    private static boolean startsInLessThanNHours(final LocalDateTime startTime, final Hours hours) {
+        LocalDateTime now = LocalDateTime.now();
+        return Hours.hoursBetween(now, startTime).isLessThan(hours);
+    }
+
+    private static boolean edgeIsGreaterThan(final BigDecimal edge, final BigDecimal minimum) {
+        return edge.compareTo(minimum) > 0;
     }
 
     private static List<Bet> tradeToBets(final Trade trade) {
@@ -315,8 +364,8 @@ public class TradeService {
 
     private static List<Bet> oddsToBets(final Odds odds, final Trade trade) {
         List<Bet> bets = new ArrayList();
-        OddsName odds1Name = odds.getOddsType() == OddsType.HANDICAP ? OddsName.OVER_ODDS : OddsName.HOME_ODDS;
-        OddsName odds2Name = odds.getOddsType() == OddsType.HANDICAP ? OddsName.UNDER_ODDS : OddsName.AWAY_ODDS;
+        OddsName odds1Name = odds.getOddsType() == OddsType.OVER_UNDER ? OddsName.OVER_ODDS : OddsName.HOME_ODDS;
+        OddsName odds2Name = odds.getOddsType() == OddsType.OVER_UNDER ? OddsName.UNDER_ODDS : OddsName.AWAY_ODDS;
         bets.add(createBet(trade, odds, odds1Name));
         bets.add(createBet(trade, odds, odds2Name));
         if (odds.getOddsType() == OddsType.ONE_X_TWO) {
@@ -327,9 +376,9 @@ public class TradeService {
 
     private static Bet createBet(final Trade trade, final Odds odds, final OddsName oddsName) {
         String description = null;
-        if (trade.getHandicap() != null) {
+        if (!Strings.isNullOrEmpty(trade.getHandicap())) {
             description = trade.getHandicap();
-        } else if (trade.getGoal() != null) {
+        } else if (!Strings.isNullOrEmpty(trade.getGoal())) {
             description = trade.getGoal();
         }
         return new Bet.Builder()

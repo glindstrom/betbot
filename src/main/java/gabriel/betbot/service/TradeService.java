@@ -2,21 +2,18 @@ package gabriel.betbot.service;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import gabriel.betbot.dtos.tradefeed.MatchGame;
-import gabriel.betbot.dtos.tradefeed.TradeFeedDto;
+import gabriel.betbot.db.Mongo;
+import gabriel.betbot.repositories.BetRepository;
 import gabriel.betbot.trades.Bet;
 import gabriel.betbot.trades.Odds;
 import gabriel.betbot.trades.OddsName;
 import gabriel.betbot.trades.OddsType;
 import gabriel.betbot.trades.Trade;
 import gabriel.betbot.utils.Client;
-import gabriel.betbot.utils.JsonMapper;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -48,42 +45,24 @@ public class TradeService {
     private static final BigDecimal MIN_EDGE_EARLY = BigDecimal.valueOf(0.04);
 
     private final AsianOddsClient asianOddsClient;
+    private final BetRepository betRepository;
 
     @Inject
-    public TradeService(final AsianOddsClient asianOddsClient) {
+    public TradeService(final AsianOddsClient asianOddsClient, final BetRepository betRepository) {
         this.asianOddsClient = asianOddsClient;
-    }
-
-    public void doFootballBets() {
-        TradeFeedDto tradeFeedDto = asianOddsClient.getFootballFeeds();
-        JsonMapper.writeObjectToFile(tradeFeedDto, "/home/gabriel/Documents/Repos/betbot/ResponseData/response.json");
-        doBets(tradeFeedDto);
-    }
-
-    public void doBasbetballBets() {
-        TradeFeedDto tradeFeedDto = asianOddsClient.getBasketballFeeds();
-        doBets(tradeFeedDto);
+        this.betRepository = betRepository;
     }
 
     public static void main(String[] args) {
         Client client = new Client();
         AsianOddsClient asianOddsClient = new AsianOddsClient(client);
-        TradeService tradeService = new TradeService(asianOddsClient);
-        LOG.info("Fetching football odds");
-        tradeService.doFootballBets();
-        LOG.info("Fetching basketball odds");
-        tradeService.doBasbetballBets();
+        BetRepository betRepo = new BetRepository(new Mongo());
+        TradeService tradeService = new TradeService(asianOddsClient, betRepo);
+        tradeService.doBets(asianOddsClient.getTrades());
     }
 
-    public void doBets(final TradeFeedDto tradeFeedDto) {
-        if (tradeFeedDto.result == null || tradeFeedDto.result.sports == null || tradeFeedDto.result.sports.isEmpty()) {
-            LOG.info("No trades were found at this time");
-            return;
-        }
-        List<MatchGame> matchGames = tradeFeedDto.result.sports.get(0).matchGames.stream()
-                .filter(matchGame -> matchGame.isActive == true && matchGame.willBeRemoved == false)
-                .collect(Collectors.toList());
-        List<Trade> trades = tradeFeedToTrades(ImmutableList.copyOf(matchGames)).stream()
+    public void doBets(final List<Trade> tradesList) {
+        List<Trade> trades = tradesList.stream()
                 .filter(trade -> trade.getBookieOdds().containsKey(PINNACLE) && trade.getBookieOdds().keySet().size() > 1)
                 .collect(toList());
         if (trades.isEmpty()) {
@@ -111,7 +90,10 @@ public class TradeService {
         if (mergedBetsList.isEmpty()) {
             LOG.info("No positive edge bets found at this time");
         }
-        mergedBetsList.forEach(System.out::println);
+        mergedBetsList.forEach(bet -> {
+            betRepository.save(bet);
+            System.out.println(bet);
+        });
     }
 
     private static Bet mergeBets(final Bet bet1, final Bet bet2) {
@@ -136,124 +118,6 @@ public class TradeService {
                     && bet.getGameId() == otherBet.getGameId()
                     && bet.getOddsName() == otherBet.getOddsName();
         };
-    }
-
-    private List<Trade> tradeFeedToTrades(final List<MatchGame> matchGames) {
-        List<Trade> trades = new ArrayList();
-        matchGames.stream().forEach((matchGame) -> {
-            addHdpTrade(matchGame, trades, true);
-            addOneXTwoTrade(matchGame, trades, true);
-            addOuTrade(matchGame, trades, true);
-        });
-        return ImmutableList.copyOf(trades);
-    }
-
-    private Map<String, Odds> extractBookieOdds(final String bookies, final OddsType oddsType) {
-        Map<String, Odds> bookieOddsMap = new HashMap();
-        String[] stringArray = bookies.split(";");
-        for (String s : stringArray) {
-            String[] arr = s.split("=");
-            String bookie = arr[0];
-            if (bookie.equalsIgnoreCase("BEST")) {
-                continue;
-            }
-            String[] oddsArray = arr[1].split(",");
-            if (oddsArray.length < 2 || (oddsType == OddsType.ONE_X_TWO && oddsArray.length < 3)) {
-                continue;
-            }
-            Odds odds = createOdds(bookie, oddsArray, oddsType);
-            bookieOddsMap.put(bookie, odds);
-        }
-        return ImmutableMap.copyOf(bookieOddsMap);
-    }
-
-    private Odds createOdds(final String bookie, final String[] oddsArray, final OddsType oddsType) {
-        Odds.Builder oddsBuilder = new Odds.Builder().withBookie(bookie);
-
-        switch (oddsType) {
-            case HANDICAP:
-                oddsBuilder = oddsBuilder.withHomeOdds(new BigDecimal(oddsArray[0]))
-                        .withAwayOdds(new BigDecimal(oddsArray[1]))
-                        .withOddsType(OddsType.HANDICAP);
-                break;
-            case OVER_UNDER:
-                oddsBuilder = oddsBuilder.withOverOdds(new BigDecimal(oddsArray[0]))
-                        .withUnderOdds(new BigDecimal(oddsArray[1]))
-                        .withOddsType(OddsType.OVER_UNDER);
-                break;
-            case ONE_X_TWO:
-                oddsBuilder = oddsBuilder.withHomeOdds(new BigDecimal(oddsArray[0]))
-                        .withAwayOdds(new BigDecimal(oddsArray[1]))
-                        .withDrawOdds(new BigDecimal(oddsArray[2]))
-                        .withOddsType(OddsType.ONE_X_TWO);
-                break;
-            default:
-                throw new AssertionError(oddsType.name());
-        }
-        return oddsBuilder.build();
-    }
-
-    private void addHdpTrade(final MatchGame matchGame, final List<Trade> trades, final boolean isFullTime) {
-        String bookieOdds = isFullTime ? matchGame.fullTimeHdp.bookieOdds : matchGame.halfTimeHdp.bookieOdds;
-        if (Strings.isNullOrEmpty(bookieOdds)) {
-            return;
-        }
-        String handicap = isFullTime ? matchGame.fullTimeHdp.handicap : matchGame.halfTimeHdp.handicap;
-        Map<String, Odds> bookieOddsMap = extractBookieOdds(bookieOdds, OddsType.HANDICAP);
-        if (bookieOddsMap.isEmpty()) {
-            return;
-        }
-        Trade trade = getTradeBuilder(matchGame)
-                .withBookmakerOdds(bookieOddsMap)
-                .withHandicap(handicap)
-                .withIsFullTime(isFullTime)
-                .build();
-        trades.add(trade);
-    }
-
-    private void addOneXTwoTrade(final MatchGame matchGame, final List<Trade> trades, final boolean isFullTime) {
-        String bookieOdds = isFullTime ? matchGame.fullTimeOneXTwo.bookieOdds : matchGame.halfTimeOneXTwo.bookieOdds;
-        if (Strings.isNullOrEmpty(bookieOdds)) {
-            return;
-        }
-
-        Map<String, Odds> bookieOddsMap = extractBookieOdds(bookieOdds, OddsType.ONE_X_TWO);
-        if (bookieOddsMap.isEmpty()) {
-            return;
-        }
-
-        Trade trade = getTradeBuilder(matchGame)
-                .withBookmakerOdds(bookieOddsMap)
-                .withIsFullTime(isFullTime)
-                .build();
-        trades.add(trade);
-    }
-
-    private Trade.Builder getTradeBuilder(final MatchGame matchGame) {
-        return new Trade.Builder()
-                .withGameId(matchGame.gameId)
-                .withMarketTypeId(matchGame.marketTypeId)
-                .withStartTime(matchGame.startTime)
-                .withHomeTeamName(matchGame.homeTeam.name)
-                .withAwayTeamName(matchGame.awayTeam.name);
-    }
-
-    private void addOuTrade(final MatchGame matchGame, final List<Trade> trades, final boolean isFullTime) {
-        String bookieOdds = isFullTime ? matchGame.fullTimeOu.bookieOdds : matchGame.halfTimeOu.bookieOdds;
-        if (Strings.isNullOrEmpty(bookieOdds)) {
-            return;
-        }
-        Map<String, Odds> bookieOddsMap = extractBookieOdds(bookieOdds, OddsType.OVER_UNDER);
-        if (bookieOddsMap.isEmpty()) {
-            return;
-        }
-        String goal = isFullTime ? matchGame.fullTimeOu.goal : matchGame.halfTimeOu.goal;
-        Trade trade = getTradeBuilder(matchGame)
-                .withBookmakerOdds(bookieOddsMap)
-                .withIsFullTime(isFullTime)
-                .withGoal(goal)
-                .build();
-        trades.add(trade);
     }
 
     private Trade addTrueOdds(final Trade trade) {
@@ -396,6 +260,7 @@ public class TradeService {
                 .withTrueOdds(trade.getTrueOdds().getOdds(oddsName))
                 .withPinnacleOdds(trade.getBookieOdds().get(PINNACLE).getOdds(oddsName))
                 .withBetDescription(description)
+                .withSportsType(trade.getSportsType())
                 .build();
 
     }

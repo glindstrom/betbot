@@ -1,9 +1,13 @@
 package gabriel.betbot.trades;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import java.math.BigDecimal;
 import java.util.List;
+import org.bson.types.ObjectId;
 import org.joda.time.LocalDateTime;
+import org.jongo.marshall.jackson.oid.MongoId;
 
 /**
  *
@@ -11,6 +15,8 @@ import org.joda.time.LocalDateTime;
  */
 public class Bet {
 
+    @MongoId
+    private final ObjectId id;
     private final BigDecimal odds;
     private final BigDecimal trueOdds;
     private final BigDecimal pinnacleOdds;
@@ -24,8 +30,44 @@ public class Bet {
     private final String betDescription;
     private final LocalDateTime startTime;
     private final long gameId;
+    private final SportsType sportsType;
+
+    @JsonCreator
+    private Bet(
+           @MongoId final ObjectId id,
+           @JsonProperty("odds") final BigDecimal odds,
+           @JsonProperty("trueOdds") final BigDecimal trueOdds,
+           @JsonProperty("pinnacleOdds") final BigDecimal pinnacleOdds,
+           @JsonProperty("bookies") final List<String> bookies,
+           @JsonProperty("oddsType") final OddsType oddsType,
+           @JsonProperty("oddsName") final OddsName oddsName,
+           @JsonProperty("edge") final BigDecimal edge,
+           @JsonProperty("isFullTime") final boolean isFullTime,
+           @JsonProperty("homeTeamName") final String homeTeamName,
+           @JsonProperty("awayTeamName") final String awayTeamName,
+           @JsonProperty("betDescription") final String betDescription,
+           @JsonProperty("startTime") final LocalDateTime startTime,
+           @JsonProperty("gameId") final long gameId,
+           @JsonProperty("sportsType") final SportsType sportsType) {
+        this.id = id;
+        this.odds = odds;
+        this.trueOdds = trueOdds;
+        this.pinnacleOdds = pinnacleOdds;
+        this.bookies = bookies;
+        this.oddsType = oddsType;
+        this.oddsName = oddsName;
+        this.edge = edge;
+        this.isFullTime = isFullTime;
+        this.homeTeamName = homeTeamName;
+        this.awayTeamName = awayTeamName;
+        this.betDescription = betDescription;
+        this.startTime = startTime;
+        this.gameId = gameId;
+        this.sportsType = sportsType;
+    }
 
     private Bet(final Builder builder) {
+        this.id = builder.id;
         this.odds = builder.odds;
         this.trueOdds = builder.trueOdds;
         this.pinnacleOdds = builder.pinnacleOdds;
@@ -39,6 +81,7 @@ public class Bet {
         this.oddsName = builder.oddsName;
         this.edge = builder.edge;
         this.betDescription = builder.betDescription;
+        this.sportsType = builder.sportsType;
     }
 
     public BigDecimal getOdds() {
@@ -92,18 +135,15 @@ public class Bet {
     public long getGameId() {
         return gameId;
     }
-    
-    
 
     @Override
     public String toString() {
         return "Bet{" + "odds=" + odds + ", trueOdds=" + trueOdds.setScale(3, BigDecimal.ROUND_HALF_UP) + ", pinnacleOdds=" + pinnacleOdds + ", bookies=" + bookies + ", oddsType=" + oddsType + ", oddsName=" + oddsName + ", edge=" + edge + ", isFullTime=" + isFullTime + ", homeTeamName=" + homeTeamName + ", awayTeamName=" + awayTeamName + ", betDescription=" + betDescription + ", startTime=" + startTime + '}';
     }
-    
-    
 
     public static class Builder {
 
+        private ObjectId id;
         private BigDecimal odds;
         private BigDecimal trueOdds;
         private BigDecimal pinnacleOdds;
@@ -117,8 +157,10 @@ public class Bet {
         private String betDescription;
         private LocalDateTime startTime;
         private long gameId;
+        private SportsType sportsType;
 
         public Builder(final Bet source) {
+            this.id = source.id;
             this.odds = source.odds;
             this.trueOdds = source.trueOdds;
             this.pinnacleOdds = source.pinnacleOdds;
@@ -132,6 +174,7 @@ public class Bet {
             this.betDescription = source.betDescription;
             this.startTime = source.startTime;
             this.gameId = source.gameId;
+            this.sportsType = source.sportsType;
         }
 
         public Builder() {
@@ -166,39 +209,49 @@ public class Bet {
             this.trueOdds = trueOdds;
             return this;
         }
-        
+
         public Builder withBookies(final List<String> bookies) {
             this.bookies = bookies;
             return this;
         }
-        
+
         public Builder withEdge(final BigDecimal edge) {
             this.edge = edge;
             return this;
         }
-        
+
         public Builder withOdds(final BigDecimal odds) {
             this.odds = odds;
             return this;
         }
-        
+
         public Builder withOddsType(final OddsType oddsType) {
             this.oddsType = oddsType;
             return this;
         }
-        
+
         public Builder withOddsName(final OddsName oddsName) {
             this.oddsName = oddsName;
             return this;
         }
-        
+
         public Builder withPinnacleOdds(final BigDecimal pinnacleOdds) {
             this.pinnacleOdds = pinnacleOdds;
             return this;
         }
-        
+
         public Builder withBetDescription(final String description) {
             this.betDescription = description;
+            return this;
+        }
+
+        public Builder withId(final ObjectId id) {
+            this.id = id;
+            return this;
+        }
+        
+        public Builder withSportsType(final SportsType sportsType) {
+            this.sportsType = sportsType;
             return this;
         }
 

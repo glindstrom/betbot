@@ -20,6 +20,7 @@ public class Trade {
     private final String homeTeamName;
     private final String awayTeamName;
     private final Odds trueOdds;
+    private final SportsType sportsType;
 
     private Trade(final Builder builder) {
         this.bookieOdds = builder.bookmakerOdds;
@@ -32,6 +33,7 @@ public class Trade {
         this.homeTeamName = builder.homeTeamName;
         this.awayTeamName = builder.awayTeamName;
         this.trueOdds = builder.trueOdds;
+        this.sportsType = builder.sportsType;
     }
 
     public Map<String, Odds> getBookieOdds() {
@@ -74,6 +76,9 @@ public class Trade {
         return trueOdds;
     }
     
+    public SportsType getSportsType() {
+        return sportsType;
+    }
     
 
     
@@ -103,6 +108,7 @@ public class Trade {
         private String homeTeamName;
         private String awayTeamName;
         private Odds trueOdds;
+        private SportsType sportsType;
 
 
         public Builder(final Trade source) {
@@ -116,6 +122,7 @@ public class Trade {
             this.homeTeamName = source.homeTeamName;
             this.awayTeamName = source.awayTeamName;
             this.trueOdds = source.trueOdds;
+            this.sportsType = source.sportsType;
         }
 
         public Builder() {
@@ -171,6 +178,11 @@ public class Trade {
         
         public Builder withTrueOdds(final Odds trueOdds) {
             this.trueOdds = trueOdds;
+            return this;
+        }
+        
+        public Builder withSportsType(final SportsType sportsType) {
+            this.sportsType = sportsType;
             return this;
         }
 

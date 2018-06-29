@@ -10,6 +10,7 @@ import gabriel.betbot.trades.OddsName;
 import gabriel.betbot.trades.OddsType;
 import gabriel.betbot.trades.Trade;
 import gabriel.betbot.utils.Client;
+import gabriel.betbot.utils.KellyCalculator;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -44,25 +45,36 @@ public class TradeService {
     private static final BigDecimal MIN_EDGE_CLOSE_TO_START = BigDecimal.valueOf(0.01);
     private static final BigDecimal MIN_EDGE_NORMAL = BigDecimal.valueOf(0.02);
     private static final BigDecimal MIN_EDGE_EARLY = BigDecimal.valueOf(0.04);
+    private static final BigDecimal MAX_FRACTION = BigDecimal.valueOf(0.01);
 
     private final AsianOddsClient asianOddsClient;
     private final BetRepository betRepository;
+    private final BankrollService bankrollService;
 
     @Inject
-    public TradeService(final AsianOddsClient asianOddsClient, final BetRepository betRepository) {
+    public TradeService(final AsianOddsClient asianOddsClient,
+            final BetRepository betRepository,
+            final BankrollService bankrollService) {
         this.asianOddsClient = asianOddsClient;
         this.betRepository = betRepository;
+        this.bankrollService = bankrollService;
     }
 
     public static void main(String[] args) {
         Client client = new Client();
         AsianOddsClient asianOddsClient = new AsianOddsClient(client);
+        BankrollService bankrollService = new BankrollService(asianOddsClient);
         BetRepository betRepo = new BetRepository(new Mongo());
-        TradeService tradeService = new TradeService(asianOddsClient, betRepo);
-        tradeService.doBets(asianOddsClient.getTrades());
+        TradeService tradeService = new TradeService(asianOddsClient, betRepo, bankrollService);
+        tradeService.doBets();
+
     }
 
-    public void doBets(final List<Trade> tradesList) {
+    public void doBets() {
+        doBets(asianOddsClient.getTrades());
+    }
+
+    private void doBets(final List<Trade> tradesList) {
         List<Trade> trades = tradesList.stream()
                 .filter(trade -> trade.getBookieOdds().containsKey(PINNACLE) && trade.getBookieOdds().keySet().size() > 1)
                 .collect(toList());
@@ -92,16 +104,30 @@ public class TradeService {
             LOG.info("No positive edge bets found at this time");
         }
         mergedBetsList.stream()
+                .map(bet -> calculateAndAddRecommendedStake(bet))
                 .sorted(Comparator.comparing(Bet::getEdge).reversed())
                 .forEach(bet -> {
-            LOG.info(bet.toString());
-            List<Bet> madeBets = betRepository.findByGameId(bet.getGameId());
-            if (!madeBets.isEmpty()) {
-                LOG.info("Bet has already been made on this game");
-            } else {
-                 betRepository.save(bet);
-            }
-        });
+                    LOG.info(bet.toString());
+                    List<Bet> madeBets = betRepository.findByGameId(bet.getGameId());
+                    if (!madeBets.isEmpty()) {
+                        LOG.info("Bet has already been made on this game");
+                    } else {
+                        betRepository.save(bet);
+                    }
+                });
+    }
+
+    private Bet calculateAndAddRecommendedStake(final Bet bet) {
+        BigDecimal bankroll = bankrollService.totalBankroll();
+        int maxStake = bigDecimalToInt(bankroll.multiply(MAX_FRACTION));
+        int optimalStake = bigDecimalToInt(bankroll.multiply(KellyCalculator.getKellyFraction(bet.getOdds(), bet.getTrueOdds())));
+        return new Bet.Builder(bet)
+                .withRecommendedStake(Math.min(maxStake, optimalStake))
+                .build();
+    }
+
+    private static int bigDecimalToInt(final BigDecimal bigDecimal) {
+        return bigDecimal.toBigInteger().intValueExact();
     }
 
     private static Bet mergeBets(final Bet bet1, final Bet bet2) {

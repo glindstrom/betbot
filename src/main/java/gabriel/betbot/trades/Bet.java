@@ -31,6 +31,7 @@ public class Bet {
     private final LocalDateTime startTime;
     private final long gameId;
     private final SportsType sportsType;
+    private final int recommendedStake;
 
     @JsonCreator
     private Bet(
@@ -48,7 +49,8 @@ public class Bet {
            @JsonProperty("betDescription") final String betDescription,
            @JsonProperty("startTime") final LocalDateTime startTime,
            @JsonProperty("gameId") final long gameId,
-           @JsonProperty("sportsType") final SportsType sportsType) {
+           @JsonProperty("sportsType") final SportsType sportsType,
+           @JsonProperty("recommendedStake") final int recommendedStake) {
         this.id = id;
         this.odds = odds;
         this.trueOdds = trueOdds;
@@ -64,6 +66,7 @@ public class Bet {
         this.startTime = startTime;
         this.gameId = gameId;
         this.sportsType = sportsType;
+        this.recommendedStake = recommendedStake;
     }
 
     private Bet(final Builder builder) {
@@ -82,6 +85,7 @@ public class Bet {
         this.edge = builder.edge;
         this.betDescription = builder.betDescription;
         this.sportsType = builder.sportsType;
+        this.recommendedStake = builder.recommendedStake;
     }
 
     public BigDecimal getOdds() {
@@ -138,7 +142,7 @@ public class Bet {
 
     @Override
     public String toString() {
-        return "Bet{" + "odds=" + odds + ", trueOdds=" + trueOdds.setScale(3, BigDecimal.ROUND_HALF_UP) + ", pinnacleOdds=" + pinnacleOdds + ", bookies=" + bookies + ", oddsType=" + oddsType + ", oddsName=" + oddsName + ", edge=" + edge + ", isFullTime=" + isFullTime + ", homeTeamName=" + homeTeamName + ", awayTeamName=" + awayTeamName + ", betDescription=" + betDescription + ", startTime=" + startTime + '}';
+        return "Bet{" + "id=" + id + ", odds=" + odds + ", trueOdds=" + trueOdds + ", pinnacleOdds=" + pinnacleOdds + ", bookies=" + bookies + ", oddsType=" + oddsType + ", oddsName=" + oddsName + ", edge=" + edge + ", isFullTime=" + isFullTime + ", homeTeamName=" + homeTeamName + ", awayTeamName=" + awayTeamName + ", betDescription=" + betDescription + ", startTime=" + startTime + ", gameId=" + gameId + ", sportsType=" + sportsType + ", recommendedStake=" + recommendedStake + '}';
     }
 
     public static class Builder {
@@ -158,6 +162,7 @@ public class Bet {
         private LocalDateTime startTime;
         private long gameId;
         private SportsType sportsType;
+        private int recommendedStake;
 
         public Builder(final Bet source) {
             this.id = source.id;
@@ -175,6 +180,7 @@ public class Bet {
             this.startTime = source.startTime;
             this.gameId = source.gameId;
             this.sportsType = source.sportsType;
+            this.recommendedStake = source.recommendedStake;
         }
 
         public Builder() {
@@ -252,6 +258,11 @@ public class Bet {
         
         public Builder withSportsType(final SportsType sportsType) {
             this.sportsType = sportsType;
+            return this;
+        }
+        
+        public Builder withRecommendedStake(final int recommendedStake) {
+            this.recommendedStake = recommendedStake;
             return this;
         }
 

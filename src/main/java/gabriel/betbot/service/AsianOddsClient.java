@@ -7,7 +7,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import gabriel.betbot.dtos.AccountSummaryDto;
+import gabriel.betbot.bankroll.Bankroll;
+import gabriel.betbot.dtos.accountsummary.AccountSummaryDto;
 import gabriel.betbot.dtos.tradefeed.MatchGame;
 import gabriel.betbot.dtos.tradefeed.TradeFeedDto;
 import gabriel.betbot.trades.Odds;
@@ -59,12 +60,12 @@ public class AsianOddsClient {
         this.client = client;
     }
 
-    public LoginResponse login() {
+    private LoginResponse login() {
         CloseableHttpResponse response = client.doGet(LOGIN_URL);
         return JsonMapper.jsonToObject(response, LoginResponse.class);
     }
 
-    public void register(final LoginResponse loginResponse) {
+    private void register(final LoginResponse loginResponse) {
         String registerUrl = loginResponse.result.url + REGISTER_URL_SUFFIX;
         this.tokenHeader = new BasicHeader(TOKEN_HEADER_NAME, loginResponse.result.token);
         Header keyHeader = new BasicHeader(KEY_HEADER_NAME, loginResponse.result.key);
@@ -85,6 +86,15 @@ public class AsianOddsClient {
         List<Header> headers = ImmutableList.of(tokenHeader);
         CloseableHttpResponse response = client.doGet(ACCOUNT_SUMMARY_URL, headers);
         return JsonMapper.jsonToObject(response, AccountSummaryDto.class);
+    }
+    
+    public Bankroll getBankroll() {
+        AccountSummaryDto accountSummary = getAccountSummary();
+        return new Bankroll.Builder()
+                .withCredit(accountSummary.result.credit)
+                .withOutstanding(accountSummary.result.outstanding)
+                .withTodayPnL(accountSummary.result.todayPnL)
+                .build();
     }
 
     public List<Trade> getTrades() {
@@ -258,13 +268,6 @@ public class AsianOddsClient {
         String feedUrl = BASE_URL + "/GetFeeds?marketTypeId=1&OddsFormat=OO&SportsType=" + sportsType.getId();
         CloseableHttpResponse response = client.doGet(feedUrl, headers);
         return JsonMapper.jsonToObject(response, TradeFeedDto.class);
-    }
-
-    public static void main(String[] args) {
-        Client client = new Client();
-        AsianOddsClient loginService = new AsianOddsClient(client);
-        loginService.loginAndRegister();
-        System.out.println(loginService.getFootballFeeds());
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)

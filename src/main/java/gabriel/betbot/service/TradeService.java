@@ -14,6 +14,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -90,7 +91,9 @@ public class TradeService {
         if (mergedBetsList.isEmpty()) {
             LOG.info("No positive edge bets found at this time");
         }
-        mergedBetsList.forEach(bet -> {
+        mergedBetsList.stream()
+                .sorted(Comparator.comparing(Bet::getEdge).reversed())
+                .forEach(bet -> {
             LOG.info(bet.toString());
             List<Bet> madeBets = betRepository.findByGameId(bet.getGameId());
             if (!madeBets.isEmpty()) {
@@ -98,7 +101,6 @@ public class TradeService {
             } else {
                  betRepository.save(bet);
             }
-           
         });
     }
 

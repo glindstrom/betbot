@@ -91,8 +91,14 @@ public class TradeService {
             LOG.info("No positive edge bets found at this time");
         }
         mergedBetsList.forEach(bet -> {
-            betRepository.save(bet);
-            System.out.println(bet);
+            LOG.info(bet.toString());
+            List<Bet> madeBets = betRepository.findByGameId(bet.getGameId());
+            if (!madeBets.isEmpty()) {
+                LOG.info("Bet has already been made on this game");
+            } else {
+                 betRepository.save(bet);
+            }
+           
         });
     }
 

@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-import static java.util.stream.Collectors.toList;
 import javax.inject.Inject;
 import javax.inject.Named;
 import org.apache.http.Header;

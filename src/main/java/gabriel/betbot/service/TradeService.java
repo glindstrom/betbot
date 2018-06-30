@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableList;
 import gabriel.betbot.db.Mongo;
 import gabriel.betbot.repositories.BetRepository;
 import gabriel.betbot.trades.Bet;
+import gabriel.betbot.trades.BetStatus;
 import gabriel.betbot.trades.Odds;
 import gabriel.betbot.trades.OddsName;
 import gabriel.betbot.trades.OddsType;
@@ -105,10 +106,12 @@ public class TradeService {
         }
         mergedBetsList.stream()
                 .map(bet -> calculateAndAddRecommendedStake(bet))
+                .map(bet -> asianOddsClient.addPlacementInfo(bet))
+                .filter(bet -> bet.getStatus() == BetStatus.OK)
                 .sorted(Comparator.comparing(Bet::getEdge).reversed())
                 .forEach(bet -> {
                     LOG.info(bet.toString());
-                    List<Bet> madeBets = betRepository.findByGameId(bet.getGameId());
+                    List<Bet> madeBets = betRepository.findByGameIdAndStatus(bet.getGameId(), BetStatus.SUCCESS);
                     if (!madeBets.isEmpty()) {
                         LOG.info("Bet has already been made on this game");
                     } else {
@@ -122,7 +125,7 @@ public class TradeService {
         int maxStake = bigDecimalToInt(bankroll.multiply(MAX_FRACTION));
         int optimalStake = bigDecimalToInt(bankroll.multiply(KellyCalculator.getKellyFraction(bet.getOdds(), bet.getTrueOdds())));
         return new Bet.Builder(bet)
-                .withRecommendedStake(Math.min(maxStake, optimalStake))
+                .withOptimalAmount(Math.min(maxStake, optimalStake))
                 .build();
     }
 
@@ -146,12 +149,19 @@ public class TradeService {
                 .orElse(null);
     }
 
-    private static Predicate<Bet> sameOddsForSameBet(Bet otherBet) {
+    private static Predicate<Bet> sameOddsForSameBet(final Bet otherBet) {
         return bet -> {
             return bet.getOdds().compareTo(otherBet.getOdds()) == 0
                     && bet.getGameId() == otherBet.getGameId()
                     && bet.getOddsName() == otherBet.getOddsName();
         };
+    }
+    
+    private Predicate<Bet> noBetOnGameExistsYet() {
+       return bet -> {
+           List<Bet> madeBets = betRepository.findByGameIdAndStatus(bet.getGameId(), BetStatus.SUCCESS);
+           return madeBets.isEmpty();
+       };
     }
 
     private Trade addTrueOdds(final Trade trade) {

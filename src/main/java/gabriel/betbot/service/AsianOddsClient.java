@@ -9,8 +9,13 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import gabriel.betbot.bankroll.Bankroll;
 import gabriel.betbot.dtos.accountsummary.AccountSummaryDto;
+import gabriel.betbot.dtos.placementinfo.OddsPlacementDatum;
+import gabriel.betbot.dtos.placementinfo.PlacementInfoDto;
+import gabriel.betbot.dtos.placementinfo.PlacementInfoRequest;
 import gabriel.betbot.dtos.tradefeed.MatchGame;
 import gabriel.betbot.dtos.tradefeed.TradeFeedDto;
+import gabriel.betbot.trades.Bet;
+import gabriel.betbot.trades.BetStatus;
 import gabriel.betbot.trades.Odds;
 import gabriel.betbot.trades.OddsType;
 import gabriel.betbot.trades.SportsType;
@@ -21,6 +26,7 @@ import gabriel.betbot.utils.JsonMapper;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,9 +52,11 @@ public class AsianOddsClient {
     private static final String BASE_URL = "https://webapi700.asianodds88.com/AsianOddsService";
     private static final String LOGIN_URL = BASE_URL + "/Login?username=" + WEB_API_USERNAME + "&password=" + WEB_API_PASSWORD;
     private static final String REGISTER_URL_SUFFIX = "/Register?username=" + WEB_API_USERNAME;
+    private static final String PLACEMENT_INFO_URL = BASE_URL + "/GetPlacementInfo";
     private static final String TOKEN_HEADER_NAME = "AOToken";
     private static final String KEY_HEADER_NAME = "AOKey";
     private static final String ACCOUNT_SUMMARY_URL = BASE_URL + "/GetAccountSummary";
+    private static final int MARKET_TYPE_TODAY = 1;
 
     private static final org.apache.logging.log4j.Logger LOG = LogManager.getLogger(AsianOddsClient.class.getName());
 
@@ -88,7 +96,46 @@ public class AsianOddsClient {
         CloseableHttpResponse response = client.doGet(ACCOUNT_SUMMARY_URL, headers);
         return JsonMapper.jsonToObject(response, AccountSummaryDto.class);
     }
+
+    public Bet addPlacementInfo(final Bet bet) {
+        PlacementInfoRequest pir = placementInfoRequestFromBet(bet);
+        PlacementInfoDto placementInfoDto = getPlacementInfo(pir);
+        if (placementInfoDto.code < 0) {
+            return new Bet.Builder(bet)
+                    .withStatus(BetStatus.FAILED)
+                    .build();
+        }
+        List<OddsPlacementDatum> data = placementInfoDto.result.oddsPlacementData.stream()
+                .filter(opd -> opd.rejected == false)
+                .collect(Collectors.toList());
+        int minAmount = data.stream()
+                .map(d -> d.minimumAmount)
+                .min(Comparator.comparing(Integer::valueOf)).get();
+         int maxAmount = data.stream()
+                .map(d -> d.maximumAmount)
+                .max(Comparator.comparing(Integer::valueOf)).get();
+        return new Bet.Builder(bet)
+                .withStatus(BetStatus.OK)
+                .withMinimumAmount(minAmount)
+                .withMaximumAmount(maxAmount)
+                .build();
+    }
     
+    private PlacementInfoDto getPlacementInfo(final PlacementInfoRequest pir) {
+        CloseableHttpResponse response = client.doPost(PLACEMENT_INFO_URL, ImmutableList.of(tokenHeader), JsonMapper.objectToString(pir));
+        return JsonMapper.jsonToObject(response, PlacementInfoDto.class);
+    }
+
+    private static PlacementInfoRequest placementInfoRequestFromBet(final Bet bet) {
+        return new PlacementInfoRequest.Builder()
+                .withBookies(bet.getBookies())
+                .withGameId(bet.getGameId())
+                .withGameType(bet.getOddsType().getCode())
+                .withMarketTypeId(MARKET_TYPE_TODAY)
+                .withOddsName(bet.getOddsName().getName())
+                .build();
+    }
+
     public Bankroll getBankroll() {
         AccountSummaryDto accountSummary = getAccountSummary();
         return new Bankroll.Builder()
@@ -106,7 +153,7 @@ public class AsianOddsClient {
         TradeFeedDto basketTradeFeedDto = this.getBasketballFeeds();
         JsonMapper.writeObjectToFile(basketTradeFeedDto, "/home/gabriel/Documents/Repos/betbot/ResponseData/basket.json");
         trades.addAll(tradeFeedDtoToTrades(basketTradeFeedDto));
-        
+
         return ImmutableList.copyOf(trades);
     }
 
@@ -266,7 +313,7 @@ public class AsianOddsClient {
             loginAndRegister();
         }
         List<Header> headers = ImmutableList.of(tokenHeader);
-        String feedUrl = BASE_URL + "/GetFeeds?marketTypeId=1&OddsFormat=OO&SportsType=" + sportsType.getId();
+        String feedUrl = BASE_URL + "/GetFeeds?marketTypeId=" + MARKET_TYPE_TODAY + "&OddsFormat=OO&SportsType=" + sportsType.getId();
         CloseableHttpResponse response = client.doGet(feedUrl, headers);
         return JsonMapper.jsonToObject(response, TradeFeedDto.class);
     }

@@ -4,6 +4,7 @@ package gabriel.betbot.repositories;
 import com.google.common.collect.ImmutableList;
 import gabriel.betbot.db.Database;
 import gabriel.betbot.trades.Bet;
+import gabriel.betbot.trades.BetStatus;
 import java.util.List;
 import javax.inject.Named;
 import org.jongo.MongoCollection;
@@ -27,8 +28,13 @@ public class BetRepository {
         bets.save(bet);
     }
     
-    public List<Bet> findByGameId(final long gameId) {
-        return ImmutableList.copyOf(bets.find("{gameId: #}", gameId).as(Bet.class).iterator());
+    public Bet saveAndGet(final Bet bet) {
+        bets.save(bet);
+        return bet;
+    }
+    
+    public List<Bet> findByGameIdAndStatus(final long gameId, final BetStatus status) {
+        return ImmutableList.copyOf(bets.find("{gameId: #, status: #}", gameId, status).as(Bet.class).iterator());
     }
 
 }

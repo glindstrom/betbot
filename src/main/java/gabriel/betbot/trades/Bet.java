@@ -31,26 +31,36 @@ public class Bet {
     private final LocalDateTime startTime;
     private final long gameId;
     private final SportsType sportsType;
-    private final int recommendedStake;
+    private final int optimalAmount;
+    private final int amount;
+    private final int minimumAmount;
+    private final int maximumAmount;
+    private final BetStatus status;
+    private final LocalDateTime created;
 
     @JsonCreator
     private Bet(
-           @MongoId final ObjectId id,
-           @JsonProperty("odds") final BigDecimal odds,
-           @JsonProperty("trueOdds") final BigDecimal trueOdds,
-           @JsonProperty("pinnacleOdds") final BigDecimal pinnacleOdds,
-           @JsonProperty("bookies") final List<String> bookies,
-           @JsonProperty("oddsType") final OddsType oddsType,
-           @JsonProperty("oddsName") final OddsName oddsName,
-           @JsonProperty("edge") final BigDecimal edge,
-           @JsonProperty("isFullTime") final boolean isFullTime,
-           @JsonProperty("homeTeamName") final String homeTeamName,
-           @JsonProperty("awayTeamName") final String awayTeamName,
-           @JsonProperty("betDescription") final String betDescription,
-           @JsonProperty("startTime") final LocalDateTime startTime,
-           @JsonProperty("gameId") final long gameId,
-           @JsonProperty("sportsType") final SportsType sportsType,
-           @JsonProperty("recommendedStake") final int recommendedStake) {
+            @MongoId final ObjectId id,
+            @JsonProperty("odds") final BigDecimal odds,
+            @JsonProperty("trueOdds") final BigDecimal trueOdds,
+            @JsonProperty("pinnacleOdds") final BigDecimal pinnacleOdds,
+            @JsonProperty("bookies") final List<String> bookies,
+            @JsonProperty("oddsType") final OddsType oddsType,
+            @JsonProperty("oddsName") final OddsName oddsName,
+            @JsonProperty("edge") final BigDecimal edge,
+            @JsonProperty("isFullTime") final boolean isFullTime,
+            @JsonProperty("homeTeamName") final String homeTeamName,
+            @JsonProperty("awayTeamName") final String awayTeamName,
+            @JsonProperty("betDescription") final String betDescription,
+            @JsonProperty("startTime") final LocalDateTime startTime,
+            @JsonProperty("gameId") final long gameId,
+            @JsonProperty("sportsType") final SportsType sportsType,
+            @JsonProperty("optimalAmount") final int optimalAmount,
+            @JsonProperty("amount") final int amount,
+            @JsonProperty("minimumAmount") final int minimumAmount,
+            @JsonProperty("maximumAmount") final int maximumAmount,
+            @JsonProperty("created") final LocalDateTime created,
+            @JsonProperty("status") final BetStatus status) {
         this.id = id;
         this.odds = odds;
         this.trueOdds = trueOdds;
@@ -66,11 +76,16 @@ public class Bet {
         this.startTime = startTime;
         this.gameId = gameId;
         this.sportsType = sportsType;
-        this.recommendedStake = recommendedStake;
+        this.optimalAmount = optimalAmount;
+        this.created = created;
+        this.status = status;
+        this.amount = amount;
+        this.minimumAmount = minimumAmount;
+        this.maximumAmount = maximumAmount;
     }
 
     private Bet(final Builder builder) {
-        this.id = builder.id;
+        this.id = builder.id != null ? builder.id : ObjectId.get();
         this.odds = builder.odds;
         this.trueOdds = builder.trueOdds;
         this.pinnacleOdds = builder.pinnacleOdds;
@@ -85,7 +100,12 @@ public class Bet {
         this.edge = builder.edge;
         this.betDescription = builder.betDescription;
         this.sportsType = builder.sportsType;
-        this.recommendedStake = builder.recommendedStake;
+        this.optimalAmount = builder.optimalAmount;
+        this.created = builder.created != null ? builder.created : LocalDateTime.now();
+        this.status = builder.status;
+        this.amount = builder.amount;
+        this.minimumAmount = builder.minimumAmount;
+        this.maximumAmount = builder.maximumAmount;
     }
 
     public BigDecimal getOdds() {
@@ -140,9 +160,29 @@ public class Bet {
         return gameId;
     }
 
+    public ObjectId getId() {
+        return id;
+    }
+
+    public SportsType getSportsType() {
+        return sportsType;
+    }
+
+    public int getOptimalAmount() {
+        return optimalAmount;
+    }
+
+    public BetStatus getStatus() {
+        return status;
+    }
+
+    public LocalDateTime getCreated() {
+        return created;
+    }
+
     @Override
     public String toString() {
-        return "Bet{" + "id=" + id + ", odds=" + odds + ", trueOdds=" + trueOdds + ", pinnacleOdds=" + pinnacleOdds + ", bookies=" + bookies + ", oddsType=" + oddsType + ", oddsName=" + oddsName + ", edge=" + edge + ", isFullTime=" + isFullTime + ", homeTeamName=" + homeTeamName + ", awayTeamName=" + awayTeamName + ", betDescription=" + betDescription + ", startTime=" + startTime + ", gameId=" + gameId + ", sportsType=" + sportsType + ", recommendedStake=" + recommendedStake + '}';
+        return "Bet{" + "id=" + id + ", odds=" + odds + ", trueOdds=" + trueOdds + ", pinnacleOdds=" + pinnacleOdds + ", bookies=" + bookies + ", oddsType=" + oddsType + ", oddsName=" + oddsName + ", edge=" + edge + ", isFullTime=" + isFullTime + ", homeTeamName=" + homeTeamName + ", awayTeamName=" + awayTeamName + ", betDescription=" + betDescription + ", startTime=" + startTime + ", gameId=" + gameId + ", sportsType=" + sportsType + ", recommendedStake=" + optimalAmount + '}';
     }
 
     public static class Builder {
@@ -162,7 +202,12 @@ public class Bet {
         private LocalDateTime startTime;
         private long gameId;
         private SportsType sportsType;
-        private int recommendedStake;
+        private int optimalAmount;
+        private int amount;
+        private int minimumAmount;
+        private int maximumAmount;
+        private LocalDateTime created;
+        private BetStatus status;
 
         public Builder(final Bet source) {
             this.id = source.id;
@@ -180,7 +225,12 @@ public class Bet {
             this.startTime = source.startTime;
             this.gameId = source.gameId;
             this.sportsType = source.sportsType;
-            this.recommendedStake = source.recommendedStake;
+            this.optimalAmount = source.optimalAmount;
+            this.amount = source.amount;
+            this.minimumAmount = source.minimumAmount;
+            this.maximumAmount = source.maximumAmount;
+            this.created = source.created;
+            this.status = source.status;
         }
 
         public Builder() {
@@ -255,14 +305,39 @@ public class Bet {
             this.id = id;
             return this;
         }
-        
+
         public Builder withSportsType(final SportsType sportsType) {
             this.sportsType = sportsType;
             return this;
         }
-        
-        public Builder withRecommendedStake(final int recommendedStake) {
-            this.recommendedStake = recommendedStake;
+
+        public Builder withOptimalAmount(final int optimalAmount) {
+            this.optimalAmount = optimalAmount;
+            return this;
+        }
+
+        public Builder withAmount(final int amount) {
+            this.amount = amount;
+            return this;
+        }
+
+        public Builder withMinimumAmount(final int minimumAmount) {
+            this.minimumAmount = minimumAmount;
+            return this;
+        }
+
+        public Builder withMaximumAmount(final int maximumAmount) {
+            this.maximumAmount = maximumAmount;
+            return this;
+        }
+
+        public Builder withCreated(final LocalDateTime created) {
+            this.created = created;
+            return this;
+        }
+
+        public Builder withStatus(final BetStatus status) {
+            this.status = status;
             return this;
         }
 

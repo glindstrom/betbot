@@ -17,7 +17,7 @@ public class JsonMapper {
 
     public static <T> T jsonToObject(final CloseableHttpResponse response,
             final Class<T> classType) {
-        ObjectMapper objectMapper = new ObjectMapper();
+        ObjectMapper objectMapper = getObjectMapper();
         try {
             return objectMapper.readValue(response.getEntity().getContent(), classType);
         } catch (IOException ex) {
@@ -27,7 +27,7 @@ public class JsonMapper {
     }
 
     public static void writeObjectToFile(final Object object, final String path) {
-        ObjectMapper objectMapper = new ObjectMapper();
+        ObjectMapper objectMapper = getObjectMapper();
         try {
             objectMapper.writeValue(new File(path), object);
         } catch (IOException ex) {
@@ -36,4 +36,8 @@ public class JsonMapper {
         }
     }
 
+    private static ObjectMapper getObjectMapper() {
+        ObjectMapper objectMapper = new ObjectMapper();
+        return objectMapper;
+    }
 }

@@ -1,6 +1,7 @@
 package gabriel.betbot.utils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.joda.JodaModule;
 import java.io.File;
 import java.io.IOException;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -38,6 +39,7 @@ public class JsonMapper {
 
     private static ObjectMapper getObjectMapper() {
         ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JodaModule());
         return objectMapper;
     }
 }

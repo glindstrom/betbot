@@ -1,9 +1,11 @@
 
 package gabriel.betbot.db;
 
+import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.mongodb.DB;
 import com.mongodb.MongoClient;
 import org.jongo.Jongo;
+import org.jongo.marshall.jackson.JacksonMapper;
 
 /**
  *
@@ -14,7 +16,7 @@ public class Mongo implements Database {
 
     public Mongo() {
         DB db = new MongoClient().getDB("betbot");
-        jongo = new Jongo(db);
+        jongo = new Jongo(db, new JacksonMapper.Builder().registerModule(new JodaModule()).build());
     }
 
     @Override

@@ -4,9 +4,9 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import org.bson.types.ObjectId;
-import org.joda.time.LocalDateTime;
 import org.jongo.marshall.jackson.oid.MongoId;
 
 /**

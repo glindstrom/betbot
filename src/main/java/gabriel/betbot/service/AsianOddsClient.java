@@ -16,6 +16,7 @@ import gabriel.betbot.trades.OddsType;
 import gabriel.betbot.trades.SportsType;
 import gabriel.betbot.trades.Trade;
 import gabriel.betbot.utils.Client;
+import gabriel.betbot.utils.DateUtil;
 import gabriel.betbot.utils.JsonMapper;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -192,7 +193,7 @@ public class AsianOddsClient {
                 .withGameId(matchGame.gameId)
                 .withSportsType(intToSportsType(sportsType))
                 .withMarketTypeId(matchGame.marketTypeId)
-                .withStartTime(matchGame.startTime)
+                .withStartTime(DateUtil.milliSecondsToLocalDateTime(matchGame.startTime))
                 .withHomeTeamName(matchGame.homeTeam.name)
                 .withAwayTeamName(matchGame.awayTeam.name);
     }

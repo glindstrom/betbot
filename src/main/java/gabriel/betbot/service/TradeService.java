@@ -13,6 +13,8 @@ import gabriel.betbot.utils.Client;
 import gabriel.betbot.utils.KellyCalculator;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -25,8 +27,6 @@ import static java.util.stream.Collectors.toList;
 import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.joda.time.Hours;
-import org.joda.time.LocalDateTime;
 
 /**
  *
@@ -39,9 +39,9 @@ public class TradeService {
     private static final int NUM_DECIMALS_ODDS = 3;
     private static final int NUM_DECIMALS_EDGE = 4;
     private static final int NUM_DECIMALS_CALCULATON = 10;
-    private static final Hours CLOSE_TO_START_HOURS = Hours.TWO;
-    private static final Hours NORMAL_HOURS = Hours.SEVEN;
-    private static final Hours EARLY_HOURS = Hours.hours(10);
+    private static final long CLOSE_TO_START_HOURS = 2;
+    private static final long NORMAL_HOURS = 7;
+    private static final long EARLY_HOURS = 10;
     private static final BigDecimal MIN_EDGE_CLOSE_TO_START = BigDecimal.valueOf(0.01);
     private static final BigDecimal MIN_EDGE_NORMAL = BigDecimal.valueOf(0.02);
     private static final BigDecimal MIN_EDGE_EARLY = BigDecimal.valueOf(0.04);
@@ -242,9 +242,9 @@ public class TradeService {
         return edgeIsGreaterThan(bet.getEdge(), MIN_EDGE_EARLY);
     }
 
-    private static boolean startsInLessThanNHours(final LocalDateTime startTime, final Hours hours) {
+    private static boolean startsInLessThanNHours(final LocalDateTime startTime, final long hours) {
         LocalDateTime now = LocalDateTime.now();
-        return Hours.hoursBetween(now, startTime).isLessThan(hours);
+        return ChronoUnit.HOURS.between(now, startTime) < hours;
     }
 
     private static boolean edgeIsGreaterThan(final BigDecimal edge, final BigDecimal minimum) {

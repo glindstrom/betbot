@@ -4,7 +4,6 @@ package gabriel.betbot.dtos.tradefeed;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import org.joda.time.LocalDateTime;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
@@ -74,7 +73,7 @@ public class MatchGame {
     @JsonProperty("MatchId")
     public final Long matchId;
     @JsonProperty("StartTime")
-    public final LocalDateTime startTime;
+    public final Long startTime;
     @JsonProperty("StartsOn")
     public final String startsOn;
     @JsonProperty("ToBeRemovedOn")
@@ -103,7 +102,7 @@ public class MatchGame {
             final String marketType, 
             final Integer marketTypeId, 
             final Long matchId, 
-            final LocalDateTime startTime, 
+            final Long startTime, 
             final String startsOn, 
             final Long toBeRemovedOn, 
             final Long updatedDateTime, 

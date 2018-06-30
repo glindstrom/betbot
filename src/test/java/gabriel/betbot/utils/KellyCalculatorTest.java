@@ -15,9 +15,9 @@ public class KellyCalculatorTest {
     public void calculatesFractionCorrectly() {
         BigDecimal trueOdds = BigDecimal.valueOf(2.0232228442);
         BigDecimal odds = BigDecimal.valueOf(2.09);
-        BigDecimal expectedFraction =  BigDecimal.valueOf(0.03);
+        BigDecimal expectedFraction =  BigDecimal.valueOf(0.03).multiply(KellyCalculator.SCALE_FACTOR);
         
-        BigDecimal calculatedFraction = KellyCalculator.getKellyFraction(odds, trueOdds).setScale(2, BigDecimal.ROUND_HALF_UP);
+        BigDecimal calculatedFraction = KellyCalculator.getKellyFraction(odds, trueOdds).setScale(3, BigDecimal.ROUND_HALF_UP);
         assertTrue("Wrong fraction, got " + calculatedFraction + " expected: " + expectedFraction, expectedFraction.compareTo(calculatedFraction) == 0);
         
     }

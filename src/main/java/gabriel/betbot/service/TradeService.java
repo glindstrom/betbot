@@ -112,27 +112,29 @@ public class TradeService {
         if (mergedBetsList.isEmpty()) {
             LOG.info("No positive edge bets found at this time");
         }
-        List<Bet> goodBets = mergedBetsList.stream()
+        Map<Long, Bet> gameIdToBet = mergedBetsList.stream()
+                .collect(Collectors.toMap(Bet::getGameId, Function.identity(), (bet1, bet2) -> bet1.getEdge().compareTo(bet2.getEdge()) > 0 ? bet1 : bet2));
+        List<Bet> goodBets = gameIdToBet.values().stream()
+                .filter(betOnGameDoesNotExist())
                 .map(bet -> calculateAndAddRecommendedStake(bet))
                 .map(bet -> asianOddsClient.addPlacementInfo(bet))
-                .map(bet -> saveIfDoesNotAlreadyExists(bet))
                 .map(bet -> setAmount(bet))
-                .filter(bet -> bet.getStatus() == BetStatus.OK)
                 .sorted(Comparator.comparing(Bet::getEdge).reversed())
+                .map(bet -> betRepository.saveAndGet(bet))
+                .filter(bet -> bet.getStatus() == BetStatus.OK)
                 .collect((Collectors.toList()));
         LOG.info("Number of bets: {}", goodBets.size());
     }
-    
-    private Bet saveIfDoesNotAlreadyExists(final Bet bet) {
-        List<Bet> madeBets = betRepository.findByGameIdAndStatus(bet.getGameId(), BetStatus.SUCCESS);
-        if (!madeBets.isEmpty()) {
-                LOG.info("Bet has already been made on this game");
-                return bet;
-            } else {
-                return betRepository.saveAndGet(bet);
-            }
+
+    private Predicate<Bet> betOnGameDoesNotExist() {
+        return bet -> !betOnGameAlreadyExists(bet);
     }
-    
+
+    private boolean betOnGameAlreadyExists(final Bet bet) {
+        List<Bet> bets = betRepository.findByGameIdAndStatus(bet.getGameId(), BetStatus.SUCCESS); 
+        return !bets.isEmpty();
+    }
+
     private static Bet setAmount(final Bet bet) {
         if (bet.getOptimalAmount() < bet.getMinimumAmount()) {
             return new Bet.Builder(bet)

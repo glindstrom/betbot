@@ -56,17 +56,21 @@ public class AsianOddsClient {
     private static final String TOKEN_HEADER_NAME = "AOToken";
     private static final String KEY_HEADER_NAME = "AOKey";
     private static final String ACCOUNT_SUMMARY_URL = BASE_URL + "/GetAccountSummary";
+    private static final String ODDS_FORMAT = "OO";
     private static final int MARKET_TYPE_TODAY = 1;
 
     private static final org.apache.logging.log4j.Logger LOG = LogManager.getLogger(AsianOddsClient.class.getName());
 
     private final Client client;
-    private final ObjectMapper objectMapper = new ObjectMapper();
     private Header tokenHeader;
+    private long footballSince;
+    private long basketballSince;
 
     @Inject
     public AsianOddsClient(final Client client) {
         this.client = client;
+        this.footballSince = 0;
+        this.basketballSince = 0;
     }
 
     private LoginResponse login() {
@@ -102,16 +106,21 @@ public class AsianOddsClient {
         PlacementInfoDto placementInfoDto = getPlacementInfo(pir);
         if (placementInfoDto.code < 0) {
             return new Bet.Builder(bet)
-                    .withStatus(BetStatus.FAILED)
+                    .withStatus(BetStatus.FAIL)
                     .build();
         }
         List<OddsPlacementDatum> data = placementInfoDto.result.oddsPlacementData.stream()
                 .filter(opd -> opd.rejected == false)
                 .collect(Collectors.toList());
+        if (data.isEmpty()) {
+            return new Bet.Builder(bet)
+                    .withStatus(BetStatus.REJECTED)
+                    .build();
+        }
         int minAmount = data.stream()
                 .map(d -> d.minimumAmount)
                 .min(Comparator.comparing(Integer::valueOf)).get();
-         int maxAmount = data.stream()
+        int maxAmount = data.stream()
                 .map(d -> d.maximumAmount)
                 .max(Comparator.comparing(Integer::valueOf)).get();
         return new Bet.Builder(bet)
@@ -120,7 +129,7 @@ public class AsianOddsClient {
                 .withMaximumAmount(maxAmount)
                 .build();
     }
-    
+
     private PlacementInfoDto getPlacementInfo(final PlacementInfoRequest pir) {
         CloseableHttpResponse response = client.doPost(PLACEMENT_INFO_URL, ImmutableList.of(tokenHeader), JsonMapper.objectToString(pir));
         return JsonMapper.jsonToObject(response, PlacementInfoDto.class);
@@ -128,11 +137,13 @@ public class AsianOddsClient {
 
     private static PlacementInfoRequest placementInfoRequestFromBet(final Bet bet) {
         return new PlacementInfoRequest.Builder()
-                .withBookies(bet.getBookies())
+                .withBookies(String.join(",", bet.getBookies()))
                 .withGameId(bet.getGameId())
                 .withGameType(bet.getOddsType().getCode())
                 .withMarketTypeId(MARKET_TYPE_TODAY)
+                .withOddsFormat(ODDS_FORMAT)
                 .withOddsName(bet.getOddsName().getName())
+                .withIsFullTime(bet.isIsFullTime() ? 1 : 0)
                 .build();
     }
 
@@ -148,9 +159,11 @@ public class AsianOddsClient {
     public List<Trade> getTrades() {
         List<Trade> trades = new ArrayList();
         TradeFeedDto footballTradeFeedDto = this.getFootballFeeds();
+        this.footballSince = footballTradeFeedDto.result != null ? footballTradeFeedDto.result.since : this.footballSince;
         JsonMapper.writeObjectToFile(footballTradeFeedDto, "/home/gabriel/Documents/Repos/betbot/ResponseData/football.json");
         trades.addAll(tradeFeedDtoToTrades(footballTradeFeedDto));
         TradeFeedDto basketTradeFeedDto = this.getBasketballFeeds();
+        this.basketballSince = basketTradeFeedDto.result != null ? basketTradeFeedDto.result.since : this.basketballSince;
         JsonMapper.writeObjectToFile(basketTradeFeedDto, "/home/gabriel/Documents/Repos/betbot/ResponseData/basket.json");
         trades.addAll(tradeFeedDtoToTrades(basketTradeFeedDto));
 
@@ -313,7 +326,14 @@ public class AsianOddsClient {
             loginAndRegister();
         }
         List<Header> headers = ImmutableList.of(tokenHeader);
-        String feedUrl = BASE_URL + "/GetFeeds?marketTypeId=" + MARKET_TYPE_TODAY + "&OddsFormat=OO&SportsType=" + sportsType.getId();
+        String feedUrl = BASE_URL + "/GetFeeds?marketTypeId=" + MARKET_TYPE_TODAY + "&OddsFormat=" + ODDS_FORMAT + "&SportsType=" + sportsType.getId();
+        String since = "";
+        if (sportsType == SportsType.FOOTBALL && this.footballSince > 0) {
+            since = "&since=" + this.footballSince;
+        } else if (sportsType == SportsType.BASKETBALL && this.basketballSince > 0) {
+            since = "&since=" + this.basketballSince;
+        }
+        feedUrl += since;
         CloseableHttpResponse response = client.doGet(feedUrl, headers);
         return JsonMapper.jsonToObject(response, TradeFeedDto.class);
     }

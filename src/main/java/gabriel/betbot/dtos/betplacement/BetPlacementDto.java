@@ -1,5 +1,5 @@
 
-package gabriel.betbot.dtos.placementinfo;
+package gabriel.betbot.dtos.betplacement;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -12,7 +12,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
     "Code",
     "Result"
 })
-public class PlacementInfoDto {
+public class BetPlacementDto {
 
     @JsonProperty("Code")
     public Integer code;
@@ -23,7 +23,7 @@ public class PlacementInfoDto {
      * No args constructor for use in serialization
      * 
      */
-    public PlacementInfoDto() {
+    public BetPlacementDto() {
     }
 
     /**
@@ -31,7 +31,8 @@ public class PlacementInfoDto {
      * @param result
      * @param code
      */
-    public PlacementInfoDto(Integer code, Result result) {
+    public BetPlacementDto(Integer code, Result result) {
+        super();
         this.code = code;
         this.result = result;
     }

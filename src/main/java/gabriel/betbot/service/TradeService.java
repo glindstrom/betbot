@@ -37,7 +37,6 @@ public class TradeService {
 
     private static final Logger LOG = LogManager.getLogger(TradeService.class.getName());
     private static final String PINNACLE = "PIN";
-    private static final int NUM_DECIMALS_ODDS = 3;
     private static final int NUM_DECIMALS_EDGE = 4;
     private static final int NUM_DECIMALS_CALCULATON = 10;
     private static final long CLOSE_TO_START_HOURS = 2;
@@ -67,8 +66,16 @@ public class TradeService {
         BankrollService bankrollService = new BankrollService(asianOddsClient);
         BetRepository betRepo = new BetRepository(new Mongo());
         TradeService tradeService = new TradeService(asianOddsClient, betRepo, bankrollService);
-        tradeService.doBets();
+        //tradeService.doBets();
 
+        try {
+            while (true) {
+                tradeService.doBets();
+                Thread.sleep(2 * 60 * 1000);
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     public void doBets() {
@@ -104,20 +111,22 @@ public class TradeService {
         if (mergedBetsList.isEmpty()) {
             LOG.info("No positive edge bets found at this time");
         }
-        mergedBetsList.stream()
+        List<Bet> goodBets = mergedBetsList.stream()
                 .map(bet -> calculateAndAddRecommendedStake(bet))
                 .map(bet -> asianOddsClient.addPlacementInfo(bet))
                 .filter(bet -> bet.getStatus() == BetStatus.OK)
                 .sorted(Comparator.comparing(Bet::getEdge).reversed())
-                .forEach(bet -> {
-                    LOG.info(bet.toString());
-                    List<Bet> madeBets = betRepository.findByGameIdAndStatus(bet.getGameId(), BetStatus.SUCCESS);
-                    if (!madeBets.isEmpty()) {
-                        LOG.info("Bet has already been made on this game");
-                    } else {
-                        betRepository.save(bet);
-                    }
-                });
+                .collect((Collectors.toList()));
+        LOG.info("Number of bets: {}", goodBets.size());
+        goodBets.forEach(bet -> {
+            LOG.info(bet.toString());
+            List<Bet> madeBets = betRepository.findByGameIdAndStatus(bet.getGameId(), BetStatus.SUCCESS);
+            if (!madeBets.isEmpty()) {
+                LOG.info("Bet has already been made on this game");
+            } else {
+                betRepository.save(bet);
+            }
+        });
     }
 
     private Bet calculateAndAddRecommendedStake(final Bet bet) {
@@ -156,12 +165,12 @@ public class TradeService {
                     && bet.getOddsName() == otherBet.getOddsName();
         };
     }
-    
+
     private Predicate<Bet> noBetOnGameExistsYet() {
-       return bet -> {
-           List<Bet> madeBets = betRepository.findByGameIdAndStatus(bet.getGameId(), BetStatus.SUCCESS);
-           return madeBets.isEmpty();
-       };
+        return bet -> {
+            List<Bet> madeBets = betRepository.findByGameIdAndStatus(bet.getGameId(), BetStatus.SUCCESS);
+            return madeBets.isEmpty();
+        };
     }
 
     private Trade addTrueOdds(final Trade trade) {

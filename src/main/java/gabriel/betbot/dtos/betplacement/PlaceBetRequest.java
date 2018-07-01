@@ -1,20 +1,19 @@
-package gabriel.betbot.dtos.placementinfo;
+package gabriel.betbot.dtos.betplacement;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.util.List;
 
 /**
  *
  * @author gabriel
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class PlacementInfoRequest {
+public class PlaceBetRequest {
 
     @JsonProperty("MarketTypeId")
     public final Integer marketTypeId;
-    @JsonProperty("Bookies")
-    public final String bookies;
+    @JsonProperty("BookieOdds")
+    public final String bookieOdds;
     @JsonProperty("IsFullTime")
     public final Integer isFullTime;
     @JsonProperty("GameId")
@@ -25,49 +24,59 @@ public class PlacementInfoRequest {
     public final String oddsName;
     @JsonProperty("OddsFormat")
     public final String oddsFormat;
-    @JsonProperty("Timeout")
-    public final Integer timeout;
+    @JsonProperty("Amount")
+    public final Integer amount;
+    @JsonProperty("PlaceBetId")
+    public final String placeBetId;
+    @JsonProperty("AcceptChangeOdds")
+    public final Integer acceptChangeOdds;
 
-    public PlacementInfoRequest() {
+    public PlaceBetRequest() {
         this.marketTypeId = null;
-        this.bookies = null;
+        this.bookieOdds = null;
         this.isFullTime = null;
         this.gameId = null;
         this.gameType = null;
         this.oddsName = null;
         this.oddsFormat = null;
-        this.timeout = null;
+        this.amount = null;
+        this.placeBetId = null;
+        this.acceptChangeOdds = null;
     }
 
-    public PlacementInfoRequest(final Builder builder) {
+    public PlaceBetRequest(final Builder builder) {
         this.marketTypeId = builder.marketTypeId;
-        this.bookies = builder.bookies;
+        this.bookieOdds = builder.bookieOdds;
         this.isFullTime = builder.isFullTime;
         this.gameId = builder.gameId;
         this.gameType = builder.gameType;
         this.oddsName = builder.oddsName;
         this.oddsFormat = builder.oddsFormat;
-        this.timeout = builder.timeout;
+        this.amount = builder.amount;
+        this.placeBetId = builder.placeBetId;
+        this.acceptChangeOdds = builder.acceptChangeOdds;
     }
 
     public static class Builder {
 
         public Integer marketTypeId;
-        public String bookies;
+        public String bookieOdds;
         public Integer isFullTime;
         public Long gameId;
         public String gameType;
         public String oddsName;
         public String oddsFormat;
-        public Integer timeout;
+        public Integer amount;
+        public String placeBetId;
+        public Integer acceptChangeOdds;
 
         public Builder withMarketTypeId(final Integer marketTypeId) {
             this.marketTypeId = marketTypeId;
             return this;
         }
 
-        public Builder withBookies(final String bookies) {
-            this.bookies = bookies;
+        public Builder withBookieOdds(final String bookieOdds) {
+            this.bookieOdds = bookieOdds;
             return this;
         }
 
@@ -90,20 +99,29 @@ public class PlacementInfoRequest {
             this.oddsName = oddsName;
             return this;
         }
-        
+
         public Builder withOddsFormat(final String oddsFormat) {
             this.oddsFormat = oddsFormat;
             return this;
         }
 
-        public Builder withTimeout(final Integer timeout) {
-            this.timeout = timeout;
+        public Builder withPlaceBetId(final String placeBetId) {
+            this.placeBetId = placeBetId;
+            return this;
+        }
+
+        public Builder withAmount(final Integer amount) {
+            this.amount = amount;
             return this;
         }
         
-        public PlacementInfoRequest build() {
-            return new PlacementInfoRequest(this);
+        public Builder withAcceptChangeOdds(final Integer acceptChangeOdds) {
+            this.acceptChangeOdds = acceptChangeOdds;
+            return this;
         }
 
+        public PlaceBetRequest build() {
+            return new PlaceBetRequest(this);
+        }
     }
 }

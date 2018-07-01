@@ -1,7 +1,8 @@
 
-package gabriel.betbot.dtos.placementinfo;
+package gabriel.betbot.dtos.betplacement;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.util.List;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -9,31 +10,27 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
-    "Code",
-    "Result"
+    "PlacementData"
 })
-public class PlacementInfoDto {
+public class Result {
 
-    @JsonProperty("Code")
-    public Integer code;
-    @JsonProperty("Result")
-    public Result result;
+    @JsonProperty("PlacementData")
+    public List<PlacementDatum> placementData = null;
 
     /**
      * No args constructor for use in serialization
      * 
      */
-    public PlacementInfoDto() {
+    public Result() {
     }
 
     /**
      * 
-     * @param result
-     * @param code
+     * @param placementData
      */
-    public PlacementInfoDto(Integer code, Result result) {
-        this.code = code;
-        this.result = result;
+    public Result(List<PlacementDatum> placementData) {
+        super();
+        this.placementData = placementData;
     }
 
 }

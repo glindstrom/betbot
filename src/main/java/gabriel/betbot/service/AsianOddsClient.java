@@ -120,25 +120,25 @@ public class AsianOddsClient {
                 .withBookie(getBookie(betPlacementDto))
                 .build();
     }
-    
+
     private static String getBetPlacementReference(final BetPlacementDto bpd) {
         if (hasPlacementData(bpd)) {
             return bpd.result.placementData.get(0).betPlacementReference;
         }
         return null;
     }
-    
+
     private static String getBookie(final BetPlacementDto bpd) {
         if (hasPlacementData(bpd)) {
             return bpd.result.placementData.get(0).bookie;
         }
         return null;
     }
-    
+
     private static boolean hasPlacementData(final BetPlacementDto bpd) {
         return bpd.result != null && bpd.result.placementData != null && !bpd.result.placementData.isEmpty();
     }
-    
+
     private PlaceBetRequest placeBetRequestFromBet(final Bet bet) {
         return new PlaceBetRequest.Builder()
                 .withAcceptChangeOdds(0)
@@ -152,13 +152,13 @@ public class AsianOddsClient {
                 .withPlaceBetId(bet.getId().toHexString())
                 .build();
     }
-    
+
     private static String bookieOddsFromBet(final Bet bet) {
-       return bet.getBookies().stream()
+        return bet.getBookies().stream()
                 .map(bookie -> bookie + ":" + bet.getOdds())
                 .collect(Collectors.joining(","));
     }
-    
+
     private BetPlacementDto getBetPlacementDto(final PlaceBetRequest pbr) {
         CloseableHttpResponse response = client.doPost(PLACE_BET_URL, ImmutableList.of(tokenHeader), JsonMapper.objectToString(pbr));
         return JsonMapper.jsonToObject(response, BetPlacementDto.class);
@@ -221,16 +221,28 @@ public class AsianOddsClient {
 
     public List<Trade> getTrades() {
         List<Trade> trades = new ArrayList();
+        trades.addAll(getFootballTrades());
+        trades.addAll(getBasketballTrades());
+
+        return ImmutableList.copyOf(trades);
+    }
+
+    public List<Trade> getFootballTrades() {
+        LOG.info("Fetching football trades");
         TradeFeedDto footballTradeFeedDto = this.getFootballFeeds();
         this.footballSince = footballTradeFeedDto.result != null ? footballTradeFeedDto.result.since : this.footballSince;
         JsonMapper.writeObjectToFile(footballTradeFeedDto, "/home/gabriel/Documents/Repos/betbot/ResponseData/football.json");
-        trades.addAll(tradeFeedDtoToTrades(footballTradeFeedDto));
+
+        return ImmutableList.copyOf(tradeFeedDtoToTrades(footballTradeFeedDto));
+    }
+
+    public List<Trade> getBasketballTrades() {
+        LOG.info("Fetching basketball trades");
         TradeFeedDto basketTradeFeedDto = this.getBasketballFeeds();
         this.basketballSince = basketTradeFeedDto.result != null ? basketTradeFeedDto.result.since : this.basketballSince;
         JsonMapper.writeObjectToFile(basketTradeFeedDto, "/home/gabriel/Documents/Repos/betbot/ResponseData/basket.json");
-        trades.addAll(tradeFeedDtoToTrades(basketTradeFeedDto));
 
-        return ImmutableList.copyOf(trades);
+        return ImmutableList.copyOf(tradeFeedDtoToTrades(basketTradeFeedDto));
     }
 
     private static List<Trade> tradeFeedDtoToTrades(final TradeFeedDto tradeFeedDto) {

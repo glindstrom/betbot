@@ -80,7 +80,8 @@ public class TradeService {
     }
 
     public void doBets() {
-        doBets(asianOddsClient.getTrades());
+        doBets(asianOddsClient.getFootballTrades());
+        doBets(asianOddsClient.getBasketballTrades());
     }
 
     private void doBets(final List<Trade> tradesList) {

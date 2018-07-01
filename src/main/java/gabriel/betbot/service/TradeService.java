@@ -114,6 +114,8 @@ public class TradeService {
         List<Bet> goodBets = mergedBetsList.stream()
                 .map(bet -> calculateAndAddRecommendedStake(bet))
                 .map(bet -> asianOddsClient.addPlacementInfo(bet))
+                .map(betRepository::saveAndGet)
+                .map(bet -> setAmount(bet))
                 .filter(bet -> bet.getStatus() == BetStatus.OK)
                 .sorted(Comparator.comparing(Bet::getEdge).reversed())
                 .collect((Collectors.toList()));
@@ -127,6 +129,18 @@ public class TradeService {
                 betRepository.save(bet);
             }
         });
+    }
+    
+    private static Bet setAmount(final Bet bet) {
+        if (bet.getOptimalAmount() < bet.getMinimumAmount()) {
+            return new Bet.Builder(bet)
+                    .withStatus(BetStatus.CANCELLED)
+                    .build();
+        }
+        int stake = Math.min(bet.getOptimalAmount(), bet.getMaximumAmount());
+        return new Bet.Builder(bet)
+                .withAmount(stake)
+                .build();
     }
 
     private Bet calculateAndAddRecommendedStake(final Bet bet) {

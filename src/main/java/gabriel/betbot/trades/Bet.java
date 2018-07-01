@@ -32,11 +32,13 @@ public class Bet {
     private final long gameId;
     private final SportsType sportsType;
     private final int optimalAmount;
-    private final int amount;
+    private final Integer amount;
     private final int minimumAmount;
     private final int maximumAmount;
     private final BetStatus status;
     private final LocalDateTime created;
+    private final String bookie;
+    private final String betPlacementReference;
 
     @JsonCreator
     private Bet(
@@ -56,10 +58,12 @@ public class Bet {
             @JsonProperty("gameId") final long gameId,
             @JsonProperty("sportsType") final SportsType sportsType,
             @JsonProperty("optimalAmount") final int optimalAmount,
-            @JsonProperty("amount") final int amount,
+            @JsonProperty("amount") final Integer amount,
             @JsonProperty("minimumAmount") final int minimumAmount,
             @JsonProperty("maximumAmount") final int maximumAmount,
             @JsonProperty("created") final LocalDateTime created,
+            @JsonProperty("betPlacementReference") final String betPlacementReference,
+            @JsonProperty("bookie") final String bookie,
             @JsonProperty("status") final BetStatus status) {
         this.id = id;
         this.odds = odds;
@@ -77,11 +81,14 @@ public class Bet {
         this.gameId = gameId;
         this.sportsType = sportsType;
         this.optimalAmount = optimalAmount;
-        this.created = created;
-        this.status = status;
         this.amount = amount;
         this.minimumAmount = minimumAmount;
         this.maximumAmount = maximumAmount;
+        this.created = created;
+        this.betPlacementReference = betPlacementReference;
+        this.bookie = bookie;
+        this.status = status;
+
     }
 
     private Bet(final Builder builder) {
@@ -106,6 +113,8 @@ public class Bet {
         this.amount = builder.amount;
         this.minimumAmount = builder.minimumAmount;
         this.maximumAmount = builder.maximumAmount;
+        this.bookie = builder.bookie;
+        this.betPlacementReference = builder.betPlacementReference;
     }
 
     public BigDecimal getOdds() {
@@ -180,6 +189,26 @@ public class Bet {
         return created;
     }
 
+    public Integer getAmount() {
+        return amount;
+    }
+
+    public int getMinimumAmount() {
+        return minimumAmount;
+    }
+
+    public int getMaximumAmount() {
+        return maximumAmount;
+    }
+
+    public String getBookie() {
+        return bookie;
+    }
+
+    public String getBetPlacementReference() {
+        return betPlacementReference;
+    }
+
     @Override
     public String toString() {
         return "Bet{" + "id=" + id + ", odds=" + odds + ", trueOdds=" + trueOdds + ", pinnacleOdds=" + pinnacleOdds + ", bookies=" + bookies + ", oddsType=" + oddsType + ", oddsName=" + oddsName + ", edge=" + edge + ", isFullTime=" + isFullTime + ", homeTeamName=" + homeTeamName + ", awayTeamName=" + awayTeamName + ", betDescription=" + betDescription + ", startTime=" + startTime + ", gameId=" + gameId + ", sportsType=" + sportsType + ", recommendedStake=" + optimalAmount + '}';
@@ -203,11 +232,14 @@ public class Bet {
         private long gameId;
         private SportsType sportsType;
         private int optimalAmount;
-        private int amount;
+        private Integer amount;
         private int minimumAmount;
         private int maximumAmount;
         private LocalDateTime created;
         private BetStatus status;
+        private String betPlacementReference;
+        private String bookie;
+        private BigDecimal stake;
 
         public Builder(final Bet source) {
             this.id = source.id;
@@ -231,6 +263,8 @@ public class Bet {
             this.maximumAmount = source.maximumAmount;
             this.created = source.created;
             this.status = source.status;
+            this.betPlacementReference = source.betPlacementReference;
+            this.bookie = source.bookie;
         }
 
         public Builder() {
@@ -338,6 +372,21 @@ public class Bet {
 
         public Builder withStatus(final BetStatus status) {
             this.status = status;
+            return this;
+        }
+        
+        public Builder withBetPlacementReference(final String betPlacementReference) {
+            this.betPlacementReference = betPlacementReference;
+            return this;
+        }
+        
+        public Builder withBookie(final String bookie) {
+            this.bookie = bookie;
+            return this;
+        }
+        
+        public Builder withStake(final BigDecimal stake) {
+            this.stake = stake;
             return this;
         }
 

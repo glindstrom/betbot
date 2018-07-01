@@ -9,6 +9,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import gabriel.betbot.bankroll.Bankroll;
 import gabriel.betbot.dtos.accountsummary.AccountSummaryDto;
+import gabriel.betbot.dtos.betplacement.BetPlacementDto;
+import gabriel.betbot.dtos.betplacement.PlaceBetRequest;
+import gabriel.betbot.dtos.betplacement.PlacementDatum;
 import gabriel.betbot.dtos.placementinfo.OddsPlacementDatum;
 import gabriel.betbot.dtos.placementinfo.PlacementInfoDto;
 import gabriel.betbot.dtos.placementinfo.PlacementInfoRequest;
@@ -53,6 +56,7 @@ public class AsianOddsClient {
     private static final String LOGIN_URL = BASE_URL + "/Login?username=" + WEB_API_USERNAME + "&password=" + WEB_API_PASSWORD;
     private static final String REGISTER_URL_SUFFIX = "/Register?username=" + WEB_API_USERNAME;
     private static final String PLACEMENT_INFO_URL = BASE_URL + "/GetPlacementInfo";
+    private static final String PLACE_BET_URL = BASE_URL + "/PlaceBet";
     private static final String TOKEN_HEADER_NAME = "AOToken";
     private static final String KEY_HEADER_NAME = "AOKey";
     private static final String ACCOUNT_SUMMARY_URL = BASE_URL + "/GetAccountSummary";
@@ -99,6 +103,64 @@ public class AsianOddsClient {
         List<Header> headers = ImmutableList.of(tokenHeader);
         CloseableHttpResponse response = client.doGet(ACCOUNT_SUMMARY_URL, headers);
         return JsonMapper.jsonToObject(response, AccountSummaryDto.class);
+    }
+
+    public Bet placeBet(final Bet bet) {
+        PlaceBetRequest pbr = placeBetRequestFromBet(bet);
+        BetPlacementDto betPlacementDto = getBetPlacementDto(pbr);
+        if (betPlacementDto.code < 0) {
+            return new Bet.Builder(bet)
+                    .withStatus(BetStatus.FAIL)
+                    .build();
+        }
+        return new Bet.Builder(bet)
+                .withStatus(BetStatus.SUCCESS)
+                .withBetPlacementReference(getBetPlacementReference(betPlacementDto))
+                .withBookie(getBookie(betPlacementDto))
+                .build();
+    }
+    
+    private static String getBetPlacementReference(final BetPlacementDto bpd) {
+        if (hasPlacementData(bpd)) {
+            return bpd.result.placementData.get(0).betPlacementReference;
+        }
+        return null;
+    }
+    
+    private static String getBookie(final BetPlacementDto bpd) {
+        if (hasPlacementData(bpd)) {
+            return bpd.result.placementData.get(0).bookie;
+        }
+        return null;
+    }
+    
+    private static boolean hasPlacementData(final BetPlacementDto bpd) {
+        return bpd.result != null && bpd.result.placementData != null && !bpd.result.placementData.isEmpty();
+    }
+    
+    private PlaceBetRequest placeBetRequestFromBet(final Bet bet) {
+        return new PlaceBetRequest.Builder()
+                .withAcceptChangeOdds(0)
+                .withAmount(bet.getAmount())
+                .withBookieOdds(bookieOddsFromBet(bet))
+                .withGameId(bet.getGameId())
+                .withGameType(bet.getOddsType().getCode())
+                .withOddsName(bet.getOddsName().getName())
+                .withIsFullTime(bet.isIsFullTime() ? 1 : 0)
+                .withMarketTypeId(MARKET_TYPE_TODAY)
+                .withPlaceBetId(bet.getId().toHexString())
+                .build();
+    }
+    
+    private static String bookieOddsFromBet(final Bet bet) {
+       return bet.getBookies().stream()
+                .map(bookie -> bookie + ":" + bet.getOdds())
+                .collect(Collectors.joining(","));
+    }
+    
+    private BetPlacementDto getBetPlacementDto(final PlaceBetRequest pbr) {
+        CloseableHttpResponse response = client.doPost(PLACE_BET_URL, ImmutableList.of(tokenHeader), JsonMapper.objectToString(pbr));
+        return JsonMapper.jsonToObject(response, BetPlacementDto.class);
     }
 
     public Bet addPlacementInfo(final Bet bet) {

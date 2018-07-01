@@ -39,6 +39,8 @@ public class Bet {
     private final LocalDateTime created;
     private final String bookie;
     private final String betPlacementReference;
+    private final MarketType marketType;
+    private final Team favoured;
 
     @JsonCreator
     private Bet(
@@ -64,6 +66,8 @@ public class Bet {
             @JsonProperty("created") final LocalDateTime created,
             @JsonProperty("betPlacementReference") final String betPlacementReference,
             @JsonProperty("bookie") final String bookie,
+            @JsonProperty("favoured") final Team favoured,
+            @JsonProperty("marketType") final MarketType marketType,
             @JsonProperty("status") final BetStatus status) {
         this.id = id;
         this.odds = odds;
@@ -87,6 +91,8 @@ public class Bet {
         this.created = created;
         this.betPlacementReference = betPlacementReference;
         this.bookie = bookie;
+        this.favoured = favoured;
+        this.marketType = marketType;
         this.status = status;
 
     }
@@ -115,6 +121,8 @@ public class Bet {
         this.maximumAmount = builder.maximumAmount;
         this.bookie = builder.bookie;
         this.betPlacementReference = builder.betPlacementReference;
+        this.favoured = builder.favoured;
+        this.marketType = builder.marketType;
     }
 
     public BigDecimal getOdds() {
@@ -209,6 +217,14 @@ public class Bet {
         return betPlacementReference;
     }
 
+    public MarketType getMarketType() {
+        return marketType;
+    }
+
+    public Team getFavoured() {
+        return favoured;
+    }
+
     @Override
     public String toString() {
         return "Bet{" + "id=" + id + ", odds=" + odds + ", trueOdds=" + trueOdds + ", pinnacleOdds=" + pinnacleOdds + ", bookies=" + bookies + ", oddsType=" + oddsType + ", oddsName=" + oddsName + ", edge=" + edge + ", isFullTime=" + isFullTime + ", homeTeamName=" + homeTeamName + ", awayTeamName=" + awayTeamName + ", betDescription=" + betDescription + ", startTime=" + startTime + ", gameId=" + gameId + ", sportsType=" + sportsType + ", recommendedStake=" + optimalAmount + '}';
@@ -240,6 +256,8 @@ public class Bet {
         private String betPlacementReference;
         private String bookie;
         private BigDecimal stake;
+        private Team favoured;
+        private MarketType marketType;
 
         public Builder(final Bet source) {
             this.id = source.id;
@@ -265,6 +283,8 @@ public class Bet {
             this.status = source.status;
             this.betPlacementReference = source.betPlacementReference;
             this.bookie = source.bookie;
+            this.favoured = source.favoured;
+            this.marketType = source.marketType;
         }
 
         public Builder() {
@@ -374,19 +394,29 @@ public class Bet {
             this.status = status;
             return this;
         }
-        
+
         public Builder withBetPlacementReference(final String betPlacementReference) {
             this.betPlacementReference = betPlacementReference;
             return this;
         }
-        
+
         public Builder withBookie(final String bookie) {
             this.bookie = bookie;
             return this;
         }
-        
+
         public Builder withStake(final BigDecimal stake) {
             this.stake = stake;
+            return this;
+        }
+        
+        public Builder withFavoured(final Team favoured) {
+            this.favoured = favoured;
+            return this;
+        }
+        
+        public Builder withMarketType(final MarketType marketType) {
+            this.marketType = marketType;
             return this;
         }
 

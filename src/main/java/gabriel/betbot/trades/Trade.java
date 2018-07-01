@@ -21,6 +21,7 @@ public class Trade {
     private final String awayTeamName;
     private final Odds trueOdds;
     private final SportsType sportsType;
+    private final Team favoured;
 
     private Trade(final Builder builder) {
         this.bookieOdds = builder.bookmakerOdds;
@@ -34,6 +35,7 @@ public class Trade {
         this.awayTeamName = builder.awayTeamName;
         this.trueOdds = builder.trueOdds;
         this.sportsType = builder.sportsType;
+        this.favoured = builder.favoured;
     }
 
     public Map<String, Odds> getBookieOdds() {
@@ -79,8 +81,10 @@ public class Trade {
     public SportsType getSportsType() {
         return sportsType;
     }
-    
 
+    public Team getFavoured() {
+        return favoured;
+    }
     
     @Override
     public String toString() {
@@ -109,6 +113,7 @@ public class Trade {
         private String awayTeamName;
         private Odds trueOdds;
         private SportsType sportsType;
+        private Team favoured;
 
 
         public Builder(final Trade source) {
@@ -123,6 +128,7 @@ public class Trade {
             this.awayTeamName = source.awayTeamName;
             this.trueOdds = source.trueOdds;
             this.sportsType = source.sportsType;
+            this.favoured = source.favoured;
         }
 
         public Builder() {
@@ -183,6 +189,11 @@ public class Trade {
         
         public Builder withSportsType(final SportsType sportsType) {
             this.sportsType = sportsType;
+            return this;
+        }
+        
+        public Builder withFavoured(final Team favoured) {
+            this.favoured = favoured;
             return this;
         }
 

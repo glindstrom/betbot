@@ -6,6 +6,7 @@ import gabriel.betbot.db.Mongo;
 import gabriel.betbot.repositories.BetRepository;
 import gabriel.betbot.trades.Bet;
 import gabriel.betbot.trades.BetStatus;
+import gabriel.betbot.trades.MarketType;
 import gabriel.betbot.trades.Odds;
 import gabriel.betbot.trades.OddsName;
 import gabriel.betbot.trades.OddsType;
@@ -114,21 +115,22 @@ public class TradeService {
         List<Bet> goodBets = mergedBetsList.stream()
                 .map(bet -> calculateAndAddRecommendedStake(bet))
                 .map(bet -> asianOddsClient.addPlacementInfo(bet))
-                .map(betRepository::saveAndGet)
+                .map(bet -> saveIfDoesNotAlreadyExists(bet))
                 .map(bet -> setAmount(bet))
                 .filter(bet -> bet.getStatus() == BetStatus.OK)
                 .sorted(Comparator.comparing(Bet::getEdge).reversed())
                 .collect((Collectors.toList()));
         LOG.info("Number of bets: {}", goodBets.size());
-        goodBets.forEach(bet -> {
-            LOG.info(bet.toString());
-            List<Bet> madeBets = betRepository.findByGameIdAndStatus(bet.getGameId(), BetStatus.SUCCESS);
-            if (!madeBets.isEmpty()) {
+    }
+    
+    private Bet saveIfDoesNotAlreadyExists(final Bet bet) {
+        List<Bet> madeBets = betRepository.findByGameIdAndStatus(bet.getGameId(), BetStatus.SUCCESS);
+        if (!madeBets.isEmpty()) {
                 LOG.info("Bet has already been made on this game");
+                return bet;
             } else {
-                betRepository.save(bet);
+                return betRepository.saveAndGet(bet);
             }
-        });
     }
     
     private static Bet setAmount(final Bet bet) {
@@ -328,6 +330,8 @@ public class TradeService {
                 .withPinnacleOdds(trade.getBookieOdds().get(PINNACLE).getOdds(oddsName))
                 .withBetDescription(description)
                 .withSportsType(trade.getSportsType())
+                .withFavoured(trade.getFavoured())
+                .withMarketType(MarketType.getById(trade.getMarketTypeId()))
                 .build();
 
     }

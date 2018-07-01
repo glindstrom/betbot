@@ -22,6 +22,7 @@ import gabriel.betbot.trades.BetStatus;
 import gabriel.betbot.trades.Odds;
 import gabriel.betbot.trades.OddsType;
 import gabriel.betbot.trades.SportsType;
+import gabriel.betbot.trades.Team;
 import gabriel.betbot.trades.Trade;
 import gabriel.betbot.utils.Client;
 import gabriel.betbot.utils.DateUtil;
@@ -202,7 +203,7 @@ public class AsianOddsClient {
                 .withBookies(String.join(",", bet.getBookies()))
                 .withGameId(bet.getGameId())
                 .withGameType(bet.getOddsType().getCode())
-                .withMarketTypeId(MARKET_TYPE_TODAY)
+                .withMarketTypeId(bet.getMarketType().getId())
                 .withOddsFormat(ODDS_FORMAT)
                 .withOddsName(bet.getOddsName().getName())
                 .withIsFullTime(bet.isIsFullTime() ? 1 : 0)
@@ -269,6 +270,7 @@ public class AsianOddsClient {
                 .withBookmakerOdds(bookieOddsMap)
                 .withHandicap(handicap)
                 .withIsFullTime(isFullTime)
+                .withFavoured(matchGame.favoured == 2 ? Team.AWAY_TEAM : Team.HOME_TEAM)
                 .build();
         trades.add(trade);
     }

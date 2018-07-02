@@ -30,6 +30,7 @@ public class Bet {
     private final String betDescription;
     private final LocalDateTime startTime;
     private final long gameId;
+    private final long matchId;
     private final SportsType sportsType;
     private final int optimalAmount;
     private final Integer amount;
@@ -58,6 +59,7 @@ public class Bet {
             @JsonProperty("betDescription") final String betDescription,
             @JsonProperty("startTime") final LocalDateTime startTime,
             @JsonProperty("gameId") final long gameId,
+            @JsonProperty("matchId") final long matchId,
             @JsonProperty("sportsType") final SportsType sportsType,
             @JsonProperty("optimalAmount") final int optimalAmount,
             @JsonProperty("amount") final Integer amount,
@@ -83,6 +85,7 @@ public class Bet {
         this.betDescription = betDescription;
         this.startTime = startTime;
         this.gameId = gameId;
+        this.matchId = matchId;
         this.sportsType = sportsType;
         this.optimalAmount = optimalAmount;
         this.amount = amount;
@@ -104,6 +107,7 @@ public class Bet {
         this.pinnacleOdds = builder.pinnacleOdds;
         this.bookies = builder.bookies;
         this.gameId = builder.gameId;
+        this.matchId = builder.matchId;
         this.startTime = builder.startTime;
         this.isFullTime = builder.isFullTime;
         this.homeTeamName = builder.homeTeamName;
@@ -176,6 +180,10 @@ public class Bet {
     public long getGameId() {
         return gameId;
     }
+    
+    public long getMatchId() {
+        return matchId;
+    }
 
     public ObjectId getId() {
         return id;
@@ -246,6 +254,7 @@ public class Bet {
         private String betDescription;
         private LocalDateTime startTime;
         private long gameId;
+        private long matchId;
         private SportsType sportsType;
         private int optimalAmount;
         private Integer amount;
@@ -274,6 +283,7 @@ public class Bet {
             this.betDescription = source.betDescription;
             this.startTime = source.startTime;
             this.gameId = source.gameId;
+            this.matchId = source.matchId;
             this.sportsType = source.sportsType;
             this.optimalAmount = source.optimalAmount;
             this.amount = source.amount;
@@ -292,6 +302,11 @@ public class Bet {
 
         public Builder withGameId(final long gameId) {
             this.gameId = gameId;
+            return this;
+        }
+        
+        public Builder withMatchId(final long matchId) {
+            this.matchId = matchId;
             return this;
         }
 

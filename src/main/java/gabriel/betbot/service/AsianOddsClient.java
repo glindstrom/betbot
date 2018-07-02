@@ -325,6 +325,7 @@ public class AsianOddsClient {
 
         return new Trade.Builder()
                 .withGameId(matchGame.gameId)
+                .withMatchId(matchGame.matchId)
                 .withSportsType(intToSportsType(sportsType))
                 .withMarketTypeId(matchGame.marketTypeId)
                 .withStartTime(DateUtil.milliSecondsToLocalDateTime(matchGame.startTime))

@@ -8,7 +8,6 @@ import gabriel.betbot.trades.BetStatus;
 import java.util.List;
 import javax.inject.Named;
 import org.jongo.MongoCollection;
-import org.jongo.MongoCursor;
 
 /**
  *
@@ -21,7 +20,7 @@ public class BetRepository {
     
     public BetRepository(final Database database) {
         bets = database.getDb().getCollection("bets");
-        bets.ensureIndex("{gameId: 1}", "{unique: false, sparse: true}");
+        bets.ensureIndex("{matchId: 1}", "{unique: false, sparse: true}");
     }
     
     public void save(final Bet bet) {
@@ -33,8 +32,8 @@ public class BetRepository {
         return bet;
     }
     
-    public List<Bet> findByGameIdAndStatus(final long gameId, final BetStatus status) {
-        return ImmutableList.copyOf(bets.find("{gameId: #, status: #}", gameId, status).as(Bet.class).iterator());
+    public List<Bet> findByMatchIdAndStatus(final long matchId, final BetStatus status) {
+        return ImmutableList.copyOf(bets.find("{matchId: #, status: #}", matchId, status).as(Bet.class).iterator());
     }
 
 }

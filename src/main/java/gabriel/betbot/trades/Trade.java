@@ -12,6 +12,7 @@ public class Trade {
 
     private final Map<String, Odds> bookieOdds;
     private final long gameId;
+    private final long matchId;
     private final int marketTypeId;
     private final LocalDateTime startTime;
     private final boolean isFullTime;
@@ -26,6 +27,7 @@ public class Trade {
     private Trade(final Builder builder) {
         this.bookieOdds = builder.bookmakerOdds;
         this.gameId = builder.gameId;
+        this.matchId = builder.matchId;
         this.marketTypeId = builder.marketTypeId;
         this.startTime = builder.startTime;
         this.isFullTime = builder.isFullTime;
@@ -85,6 +87,10 @@ public class Trade {
     public Team getFavoured() {
         return favoured;
     }
+
+    public long getMatchId() {
+        return matchId;
+    }
     
     @Override
     public String toString() {
@@ -104,6 +110,7 @@ public class Trade {
 
         private Map<String, Odds> bookmakerOdds;
         private long gameId;
+        private long matchId;
         private int marketTypeId;
         private LocalDateTime startTime;
         private boolean isFullTime;
@@ -119,6 +126,7 @@ public class Trade {
         public Builder(final Trade source) {
             this.bookmakerOdds = source.bookieOdds;
             this.gameId = source.gameId;
+            this.matchId = source.matchId;
             this.marketTypeId = source.marketTypeId;
             this.startTime = source.startTime;
             this.isFullTime = source.isFullTime;
@@ -144,6 +152,11 @@ public class Trade {
 
         public Builder withGameId(final long gameId) {
             this.gameId = gameId;
+            return this;
+        }
+        
+        public Builder withMatchId(final long matchId) {
+            this.matchId = matchId;
             return this;
         }
 

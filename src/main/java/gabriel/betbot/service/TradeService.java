@@ -136,20 +136,23 @@ public class TradeService {
     }
 
     private boolean betOnGameAlreadyExists(final Bet bet) {
-        List<Bet> bets = betRepository.findByGameIdAndStatus(bet.getGameId(), BetStatus.SUCCESS); 
+        List<Bet> bets = betRepository.findByMatchIdAndStatus(bet.getMatchId(), BetStatus.SUCCESS); 
         return !bets.isEmpty();
     }
 
     private static Bet setAmount(final Bet bet) {
-        if (bet.getOptimalAmount() < bet.getMinimumAmount()) {
-            return new Bet.Builder(bet)
-                    .withStatus(BetStatus.CANCELLED)
-                    .build();
-        }
-        int stake = Math.min(bet.getOptimalAmount(), bet.getMaximumAmount());
         return new Bet.Builder(bet)
-                .withAmount(stake)
+                .withAmount(bet.getMinimumAmount())
                 .build();
+//        if (bet.getOptimalAmount() < bet.getMinimumAmount()) {
+//            return new Bet.Builder(bet)
+//                    .withStatus(BetStatus.CANCELLED)
+//                    .build();
+//        }
+//        int stake = Math.min(bet.getOptimalAmount(), bet.getMaximumAmount());
+//        return new Bet.Builder(bet)
+//                .withAmount(stake)
+//                .build();
     }
 
     private Bet calculateAndAddRecommendedStake(final Bet bet) {
@@ -186,13 +189,6 @@ public class TradeService {
             return bet.getOdds().compareTo(otherBet.getOdds()) == 0
                     && bet.getGameId() == otherBet.getGameId()
                     && bet.getOddsName() == otherBet.getOddsName();
-        };
-    }
-
-    private Predicate<Bet> noBetOnGameExistsYet() {
-        return bet -> {
-            List<Bet> madeBets = betRepository.findByGameIdAndStatus(bet.getGameId(), BetStatus.SUCCESS);
-            return madeBets.isEmpty();
         };
     }
 
@@ -333,6 +329,7 @@ public class TradeService {
                 .withHomeTeamName(trade.getHomeTeamName())
                 .withAwayTeamName(trade.getAwayTeamName())
                 .withGameId(trade.getGameId())
+                .withMatchId(trade.getMatchId())
                 .withStartTime(trade.getStartTime())
                 .withIsFullTime(trade.isIsFullTime())
                 .withOdds(odds.getOdds(oddsName))

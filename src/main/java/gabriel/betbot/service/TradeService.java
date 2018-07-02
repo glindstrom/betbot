@@ -1,7 +1,7 @@
 package gabriel.betbot.service;
 
 import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import gabriel.betbot.db.Mongo;
 import gabriel.betbot.repositories.BetRepository;
 import gabriel.betbot.trades.Bet;
@@ -20,8 +20,10 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -162,7 +164,7 @@ public class TradeService {
     }
 
     private static Bet mergeBets(final Bet bet1, final Bet bet2) {
-        List<String> bookies = new ArrayList();
+        Set<String> bookies = new HashSet();
         bookies.addAll(bet1.getBookies());
         bookies.addAll(bet2.getBookies());
         return new Bet.Builder(bet1)
@@ -328,7 +330,7 @@ public class TradeService {
                 .withEdge(odds.getEdge(oddsName))
                 .withOddsType(odds.getOddsType())
                 .withOddsName(oddsName)
-                .withBookies(ImmutableList.of(odds.getBookie()))
+                .withBookies(ImmutableSet.of(odds.getBookie()))
                 .withTrueOdds(trade.getTrueOdds().getOdds(oddsName))
                 .withPinnacleOdds(trade.getBookieOdds().get(PINNACLE).getOdds(oddsName))
                 .withBetDescription(description)

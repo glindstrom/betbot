@@ -61,7 +61,7 @@ public class AsianOddsClient {
     private static final String TOKEN_HEADER_NAME = "AOToken";
     private static final String KEY_HEADER_NAME = "AOKey";
     private static final String ACCOUNT_SUMMARY_URL = BASE_URL + "/GetAccountSummary";
-    private static final String ODDS_FORMAT = "OO";
+    private static final String ODDS_FORMAT = "00";
     private static final int MARKET_TYPE_TODAY = 1;
 
     private static final org.apache.logging.log4j.Logger LOG = LogManager.getLogger(AsianOddsClient.class.getName());

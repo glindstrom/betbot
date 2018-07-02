@@ -2,10 +2,10 @@ package gabriel.betbot.trades;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.Set;
 import org.bson.types.ObjectId;
 import org.jongo.marshall.jackson.oid.MongoId;
 
@@ -20,7 +20,7 @@ public class Bet {
     private final BigDecimal odds;
     private final BigDecimal trueOdds;
     private final BigDecimal pinnacleOdds;
-    private final List<String> bookies;
+    private final Set<String> bookies;
     private final OddsType oddsType;
     private final OddsName oddsName;
     private final BigDecimal edge;
@@ -48,7 +48,7 @@ public class Bet {
             @JsonProperty("odds") final BigDecimal odds,
             @JsonProperty("trueOdds") final BigDecimal trueOdds,
             @JsonProperty("pinnacleOdds") final BigDecimal pinnacleOdds,
-            @JsonProperty("bookies") final List<String> bookies,
+            @JsonProperty("bookies") final Set<String> bookies,
             @JsonProperty("oddsType") final OddsType oddsType,
             @JsonProperty("oddsName") final OddsName oddsName,
             @JsonProperty("edge") final BigDecimal edge,
@@ -137,8 +137,8 @@ public class Bet {
         return pinnacleOdds;
     }
 
-    public List<String> getBookies() {
-        return ImmutableList.copyOf(bookies);
+    public Set<String> getBookies() {
+        return ImmutableSet.copyOf(bookies);
     }
 
     public OddsType getOddsType() {
@@ -236,7 +236,7 @@ public class Bet {
         private BigDecimal odds;
         private BigDecimal trueOdds;
         private BigDecimal pinnacleOdds;
-        private List<String> bookies;
+        private Set<String> bookies;
         private OddsType oddsType;
         private OddsName oddsName;
         private BigDecimal edge;
@@ -320,7 +320,7 @@ public class Bet {
             return this;
         }
 
-        public Builder withBookies(final List<String> bookies) {
+        public Builder withBookies(final Set<String> bookies) {
             this.bookies = bookies;
             return this;
         }

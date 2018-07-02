@@ -3,7 +3,6 @@ package gabriel.betbot.service;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -11,7 +10,6 @@ import gabriel.betbot.bankroll.Bankroll;
 import gabriel.betbot.dtos.accountsummary.AccountSummaryDto;
 import gabriel.betbot.dtos.betplacement.BetPlacementDto;
 import gabriel.betbot.dtos.betplacement.PlaceBetRequest;
-import gabriel.betbot.dtos.betplacement.PlacementDatum;
 import gabriel.betbot.dtos.placementinfo.OddsPlacementDatum;
 import gabriel.betbot.dtos.placementinfo.PlacementInfoDto;
 import gabriel.betbot.dtos.placementinfo.PlacementInfoRequest;
@@ -357,8 +355,13 @@ public class AsianOddsClient {
             if (oddsArray.length < 2 || (oddsType == OddsType.ONE_X_TWO && oddsArray.length < 3)) {
                 continue;
             }
-            Odds odds = createOdds(bookie, oddsArray, oddsType);
-            bookieOddsMap.put(bookie, odds);
+            try {
+                Odds odds = createOdds(bookie, oddsArray, oddsType);
+                bookieOddsMap.put(bookie, odds);
+            } catch (Exception e) {
+                LOG.error("Error creating odds from: {}", bookies);
+            }
+
         }
         return ImmutableMap.copyOf(bookieOddsMap);
     }

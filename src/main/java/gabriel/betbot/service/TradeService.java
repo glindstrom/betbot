@@ -48,6 +48,8 @@ public class TradeService {
     private static final BigDecimal MIN_EDGE_CLOSE_TO_START = BigDecimal.valueOf(0.01);
     private static final BigDecimal MIN_EDGE_NORMAL = BigDecimal.valueOf(0.02);
     private static final BigDecimal MIN_EDGE_EARLY = BigDecimal.valueOf(0.04);
+    private static final BigDecimal MAX_ODDS_CLOSE_TO_START = BigDecimal.valueOf(3);
+    private static final BigDecimal MAX_ODDS_REGULAR  = BigDecimal.valueOf(3);
     private static final BigDecimal MAX_FRACTION = BigDecimal.valueOf(0.01);
 
     private final AsianOddsClient asianOddsClient;
@@ -265,21 +267,24 @@ public class TradeService {
         if (!startsInLessThanNHours(bet.getStartTime(), CLOSE_TO_START_HOURS)) {
             return false;
         }
-        return edgeIsGreaterThan(bet.getEdge(), MIN_EDGE_CLOSE_TO_START);
+        return oddsAreLessThanOrEqualTo(bet.getOdds(), MAX_ODDS_CLOSE_TO_START)
+                && edgeIsGreaterThan(bet.getEdge(), MIN_EDGE_CLOSE_TO_START);
     }
 
     private static boolean hasNormalEdge(final Bet bet) {
         if (!startsInLessThanNHours(bet.getStartTime(), NORMAL_HOURS)) {
             return false;
         }
-        return edgeIsGreaterThan(bet.getEdge(), MIN_EDGE_NORMAL);
+        return oddsAreLessThanOrEqualTo(bet.getOdds(), MAX_ODDS_REGULAR)
+                && edgeIsGreaterThan(bet.getEdge(), MIN_EDGE_NORMAL);
     }
 
     private static boolean hasEarlyEdge(final Bet bet) {
         if (!startsInLessThanNHours(bet.getStartTime(), EARLY_HOURS)) {
             return false;
         }
-        return edgeIsGreaterThan(bet.getEdge(), MIN_EDGE_EARLY);
+        return oddsAreLessThanOrEqualTo(bet.getOdds(), MAX_ODDS_REGULAR)
+               && edgeIsGreaterThan(bet.getEdge(), MIN_EDGE_EARLY);
     }
 
     private static boolean startsInLessThanNHours(final LocalDateTime startTime, final long hours) {
@@ -289,6 +294,10 @@ public class TradeService {
 
     private static boolean edgeIsGreaterThan(final BigDecimal edge, final BigDecimal minimum) {
         return edge.compareTo(minimum) > 0;
+    }
+    
+    private static boolean oddsAreLessThanOrEqualTo(final BigDecimal odds, final BigDecimal maximum) {
+        return odds.compareTo(maximum) <= 0;
     }
 
     private static List<Bet> tradeToBets(final Trade trade) {

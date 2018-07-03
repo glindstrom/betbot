@@ -33,4 +33,9 @@ public class Result {
         this.placementData = placementData;
     }
 
+    @Override
+    public String toString() {
+        return "Result{" + "placementData=" + placementData + '}';
+    }
+
 }

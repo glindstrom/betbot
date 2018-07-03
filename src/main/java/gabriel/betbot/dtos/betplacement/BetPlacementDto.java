@@ -37,4 +37,9 @@ public class BetPlacementDto {
         this.result = result;
     }
 
+    @Override
+    public String toString() {
+        return "BetPlacementDto{" + "code=" + code + ", result=" + result + '}';
+    }
+
 }

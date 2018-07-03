@@ -42,4 +42,9 @@ public class PlacementDatum {
         this.message = message;
     }
 
+    @Override
+    public String toString() {
+        return "PlacementDatum{" + "betPlacementReference=" + betPlacementReference + ", bookie=" + bookie + ", message=" + message + '}';
+    }
+
 }

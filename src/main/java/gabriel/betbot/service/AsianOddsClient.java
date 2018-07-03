@@ -68,12 +68,14 @@ public class AsianOddsClient {
     private Header tokenHeader;
     private long footballSince;
     private long basketballSince;
+    private int currentCredit;
 
     @Inject
     public AsianOddsClient(final Client client) {
         this.client = client;
         this.footballSince = 0;
         this.basketballSince = 0;
+        this.currentCredit = Integer.MIN_VALUE;
     }
 
     private LoginResponse login() {
@@ -118,6 +120,7 @@ public class AsianOddsClient {
                     .withStatus(BetStatus.FAIL)
                     .build();
         }
+        this.currentCredit -= bet.getAmount();
         return new Bet.Builder(bet)
                 .withStatus(BetStatus.SUCCESS)
                 .withBetPlacementReference(getBetPlacementReference(betPlacementDto))
@@ -126,8 +129,10 @@ public class AsianOddsClient {
     }
     
     private boolean creditCoversBetAmount(final int amount) {
-        Bankroll bankroll = this.getBankroll();
-        return bankroll.getCredit().compareTo(BigDecimal.valueOf(amount)) >= 0;
+        if (this.currentCredit == Integer.MIN_VALUE) {
+            this.currentCredit = this.getBankroll().getCredit().toBigInteger().intValueExact();
+        }
+        return this.currentCredit >= amount;
     }
 
     private static String getBetPlacementReference(final BetPlacementDto bpd) {

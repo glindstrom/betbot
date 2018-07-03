@@ -1,6 +1,7 @@
 package gabriel.betbot.trades;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
 import java.math.BigDecimal;
@@ -28,6 +29,7 @@ public class Bet {
     private final String homeTeamName;
     private final String awayTeamName;
     private final String betDescription;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd.MM.yyyy HH:mm")
     private final LocalDateTime startTime;
     private final long gameId;
     private final long matchId;
@@ -37,6 +39,7 @@ public class Bet {
     private final int minimumAmount;
     private final int maximumAmount;
     private final BetStatus status;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd.MM.yyyy HH:mm")
     private final LocalDateTime created;
     private final String bookie;
     private final String betPlacementReference;
@@ -180,7 +183,7 @@ public class Bet {
     public long getGameId() {
         return gameId;
     }
-    
+
     public long getMatchId() {
         return matchId;
     }
@@ -304,7 +307,7 @@ public class Bet {
             this.gameId = gameId;
             return this;
         }
-        
+
         public Builder withMatchId(final long matchId) {
             this.matchId = matchId;
             return this;
@@ -424,12 +427,12 @@ public class Bet {
             this.stake = stake;
             return this;
         }
-        
+
         public Builder withFavoured(final Team favoured) {
             this.favoured = favoured;
             return this;
         }
-        
+
         public Builder withMarketType(final MarketType marketType) {
             this.marketType = marketType;
             return this;

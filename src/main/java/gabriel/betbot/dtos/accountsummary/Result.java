@@ -15,13 +15,16 @@ public class Result {
     public final BigDecimal credit;
     public final BigDecimal outstanding;
     public final BigDecimal todayPnL;
+    public final BigDecimal yesterdayPnL;
 
     @JsonCreator
     public Result(@JsonProperty("Credit") final BigDecimal credit,
             @JsonProperty("Outstanding") final BigDecimal outstanding,
+            @JsonProperty("YesterdayPnL") final BigDecimal yesterdayPnl,
             @JsonProperty("TodayPnL") final BigDecimal todayPnL) {
         this.credit = credit;
         this.outstanding = outstanding;
+        this.yesterdayPnL = yesterdayPnl;
         this.todayPnL = todayPnL;
     }
 

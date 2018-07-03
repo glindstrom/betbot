@@ -11,11 +11,13 @@ public class Bankroll {
     private final BigDecimal credit;
     private final BigDecimal outstanding;
     private final BigDecimal todayPnL;
+    private final BigDecimal yesterdayPnl;
     
     public Bankroll(final Builder builder) {
         this.credit = builder.credit;
         this.outstanding = builder.outstanding;
         this.todayPnL = builder.todayPnL;
+        this.yesterdayPnl = builder.yesterdayPnL;
     }
 
     public BigDecimal getCredit() {
@@ -29,11 +31,17 @@ public class Bankroll {
     public BigDecimal getTodayPnL() {
         return todayPnL;
     }
-    
+
+    @Override
+    public String toString() {
+        return "Bankroll{" + "credit=" + credit + ", outstanding=" + outstanding + ", todayPnL=" + todayPnL + ", yesterdayPnl=" + yesterdayPnl + '}';
+    }
+
     public static class Builder {
         private BigDecimal credit;
         private BigDecimal outstanding;
         private BigDecimal todayPnL;
+        private BigDecimal yesterdayPnL;
         
         public Builder() {
         }
@@ -56,6 +64,11 @@ public class Bankroll {
         
         public Builder withTodayPnL(final BigDecimal todayPnL) {
             this.todayPnL = todayPnL;
+            return this;
+        }
+        
+        public Builder withYesterdayPnl(final BigDecimal yesterdayPnL) {
+            this.yesterdayPnL = yesterdayPnL;
             return this;
         }
         

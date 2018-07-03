@@ -117,18 +117,19 @@ public class TradeService {
         if (mergedBetsList.isEmpty()) {
             LOG.info("No positive edge bets found at this time");
         }
-        Map<Long, Bet> gameIdToBet = mergedBetsList.stream()
-                .collect(Collectors.toMap(Bet::getGameId, Function.identity(), (bet1, bet2) -> bet1.getEdge().compareTo(bet2.getEdge()) > 0 ? bet1 : bet2));
-        List<Bet> goodBets = gameIdToBet.values().stream()
+        Map<Long, Bet> matchIdToBet = mergedBetsList.stream()
+                .collect(Collectors.toMap(Bet::getMatchId, Function.identity(), (bet1, bet2) -> bet1.getEdge().compareTo(bet2.getEdge()) > 0 ? bet1 : bet2));
+        List<Bet> goodBets = matchIdToBet.values().stream()
                 .filter(betOnGameDoesNotExist())
                 .map(bet -> calculateAndAddRecommendedStake(bet))
                 .map(bet -> asianOddsClient.addPlacementInfo(bet))
                 .map(bet -> setAmount(bet))
                 .sorted(Comparator.comparing(Bet::getEdge).reversed())
-                .map(bet -> betRepository.saveAndGet(bet))
+                .map(betRepository::saveAndGet)
                 .filter(bet -> bet.getStatus() == BetStatus.OK)
                 .collect((Collectors.toList()));
         LOG.info("Number of bets: {}", goodBets.size());
+        LOG.info(asianOddsClient.getBankroll());
     }
 
     private Predicate<Bet> betOnGameDoesNotExist() {

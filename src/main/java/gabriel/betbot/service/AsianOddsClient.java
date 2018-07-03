@@ -105,8 +105,14 @@ public class AsianOddsClient {
     }
 
     public Bet placeBet(final Bet bet) {
+        if (!creditCoversBetAmount(bet.getAmount())) {
+            LOG.info("Not enough funds to place bet");
+            return new Bet.Builder(bet)
+                   .withStatus(BetStatus.CANCELLED)
+                    .build();
+        }
         PlaceBetRequest pbr = placeBetRequestFromBet(bet);
-        BetPlacementDto betPlacementDto = getBetPlacementDto(pbr);
+        BetPlacementDto betPlacementDto = placeBet(pbr);
         if (betPlacementDto.code < 0) {
             return new Bet.Builder(bet)
                     .withStatus(BetStatus.FAIL)
@@ -117,6 +123,11 @@ public class AsianOddsClient {
                 .withBetPlacementReference(getBetPlacementReference(betPlacementDto))
                 .withBookie(getBookie(betPlacementDto))
                 .build();
+    }
+    
+    private boolean creditCoversBetAmount(final int amount) {
+        Bankroll bankroll = this.getBankroll();
+        return bankroll.getCredit().compareTo(BigDecimal.valueOf(amount)) <= 0;
     }
 
     private static String getBetPlacementReference(final BetPlacementDto bpd) {
@@ -157,7 +168,7 @@ public class AsianOddsClient {
                 .collect(Collectors.joining(","));
     }
 
-    private BetPlacementDto getBetPlacementDto(final PlaceBetRequest pbr) {
+    private BetPlacementDto placeBet(final PlaceBetRequest pbr) {
         CloseableHttpResponse response = client.doPost(PLACE_BET_URL, ImmutableList.of(tokenHeader), JsonMapper.objectToString(pbr));
         return JsonMapper.jsonToObject(response, BetPlacementDto.class);
     }
@@ -214,6 +225,7 @@ public class AsianOddsClient {
                 .withCredit(accountSummary.result.credit)
                 .withOutstanding(accountSummary.result.outstanding)
                 .withTodayPnL(accountSummary.result.todayPnL)
+                .withYesterdayPnl(accountSummary.result.yesterdayPnL)
                 .build();
     }
 

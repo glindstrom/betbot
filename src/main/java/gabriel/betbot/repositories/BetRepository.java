@@ -6,6 +6,7 @@ import gabriel.betbot.db.Database;
 import gabriel.betbot.trades.Bet;
 import gabriel.betbot.trades.BetStatus;
 import java.util.List;
+import javax.inject.Inject;
 import javax.inject.Named;
 import org.jongo.MongoCollection;
 
@@ -18,6 +19,7 @@ public class BetRepository {
     
     private final MongoCollection bets;
     
+    @Inject
     public BetRepository(final Database database) {
         bets = database.getDb().getCollection("bets");
         bets.ensureIndex("{matchId: 1}", "{unique: false, sparse: true}");

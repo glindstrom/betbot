@@ -136,8 +136,8 @@ public class AsianOddsClient {
     }
 
     private static String getBetPlacementReference(final BetPlacementDto bpd) {
-        if (hasPlacementData(bpd)) {
-            return bpd.result.placementData.get(0).betPlacementReference;
+        if (bpd.result != null) {
+            return bpd.result.betPlacementReference;
         }
         return null;
     }

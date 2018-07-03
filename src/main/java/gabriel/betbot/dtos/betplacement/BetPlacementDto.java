@@ -13,6 +13,8 @@ public class BetPlacementDto {
     public Integer code;
     @JsonProperty("Result")
     public Result result;
+    @JsonProperty("Message")
+    public String message;
 
     /**
      * No args constructor for use in serialization
@@ -25,15 +27,17 @@ public class BetPlacementDto {
      * 
      * @param result
      * @param code
+     * @param message
      */
-    public BetPlacementDto(Integer code, Result result) {
+    public BetPlacementDto(Integer code, Result result, String message) {
         this.code = code;
         this.result = result;
+        this.message = message;
     }
 
     @Override
     public String toString() {
-        return "BetPlacementDto{" + "code=" + code + ", result=" + result + '}';
+        return "BetPlacementDto{" + "code=" + code + ", result=" + result + ", message=" + message + '}';
     }
 
 }

@@ -127,7 +127,7 @@ public class AsianOddsClient {
     
     private boolean creditCoversBetAmount(final int amount) {
         Bankroll bankroll = this.getBankroll();
-        return bankroll.getCredit().compareTo(BigDecimal.valueOf(amount)) <= 0;
+        return bankroll.getCredit().compareTo(BigDecimal.valueOf(amount)) >= 0;
     }
 
     private static String getBetPlacementReference(final BetPlacementDto bpd) {
@@ -156,9 +156,11 @@ public class AsianOddsClient {
                 .withGameId(bet.getGameId())
                 .withGameType(bet.getOddsType().getCode())
                 .withOddsName(bet.getOddsName().getName())
+                .withOddsFormat(ODDS_FORMAT)
                 .withIsFullTime(bet.isIsFullTime() ? 1 : 0)
                 .withMarketTypeId(MARKET_TYPE_TODAY)
                 .withPlaceBetId(bet.getId().toHexString())
+                .withSportsType(bet.getSportsType().getId())
                 .build();
     }
 

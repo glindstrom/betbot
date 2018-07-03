@@ -30,6 +30,8 @@ public class PlaceBetRequest {
     public final String placeBetId;
     @JsonProperty("AcceptChangeOdds")
     public final Integer acceptChangeOdds;
+    @JsonProperty("SportsType")
+    public final Integer sportsType;
 
     public PlaceBetRequest() {
         this.marketTypeId = null;
@@ -42,6 +44,7 @@ public class PlaceBetRequest {
         this.amount = null;
         this.placeBetId = null;
         this.acceptChangeOdds = null;
+        this.sportsType = null;
     }
 
     public PlaceBetRequest(final Builder builder) {
@@ -55,6 +58,7 @@ public class PlaceBetRequest {
         this.amount = builder.amount;
         this.placeBetId = builder.placeBetId;
         this.acceptChangeOdds = builder.acceptChangeOdds;
+        this.sportsType = builder.sportsType;
     }
 
     public static class Builder {
@@ -69,6 +73,7 @@ public class PlaceBetRequest {
         public Integer amount;
         public String placeBetId;
         public Integer acceptChangeOdds;
+        public Integer sportsType;
 
         public Builder withMarketTypeId(final Integer marketTypeId) {
             this.marketTypeId = marketTypeId;
@@ -117,6 +122,11 @@ public class PlaceBetRequest {
         
         public Builder withAcceptChangeOdds(final Integer acceptChangeOdds) {
             this.acceptChangeOdds = acceptChangeOdds;
+            return this;
+        }
+        
+        public Builder withSportsType(final Integer sportsType) {
+            this.sportsType = sportsType;
             return this;
         }
 

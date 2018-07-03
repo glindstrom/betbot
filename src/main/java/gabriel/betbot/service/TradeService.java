@@ -119,17 +119,19 @@ public class TradeService {
         }
         Map<Long, Bet> matchIdToBet = mergedBetsList.stream()
                 .collect(Collectors.toMap(Bet::getMatchId, Function.identity(), (bet1, bet2) -> bet1.getEdge().compareTo(bet2.getEdge()) > 0 ? bet1 : bet2));
-        List<Bet> goodBets = matchIdToBet.values().stream()
+        List<Bet> placedBets = matchIdToBet.values().stream()
                 .filter(betOnGameDoesNotExist())
                 .map(bet -> calculateAndAddRecommendedStake(bet))
-                .map(bet -> asianOddsClient.addPlacementInfo(bet))
+                .map(asianOddsClient::addPlacementInfo)
                 .map(bet -> setAmount(bet))
                 .sorted(Comparator.comparing(Bet::getEdge).reversed())
-                .map(betRepository::saveAndGet)
                 .filter(bet -> bet.getStatus() == BetStatus.OK)
+                .map(asianOddsClient::placeBet)
+                .map(betRepository::saveAndGet)
                 .collect((Collectors.toList()));
-        LOG.info("Number of bets: {}", goodBets.size());
+        LOG.info("Number of bets: {}", placedBets.size());
         LOG.info(asianOddsClient.getBankroll());
+        this.bankrollService.clear();
     }
 
     private Predicate<Bet> betOnGameDoesNotExist() {

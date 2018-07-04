@@ -9,6 +9,6 @@ import org.jongo.Jongo;
  *
  * @author gabriel
  */
-public interface Database {
+public interface DataSource {
     Jongo getDb();
 }

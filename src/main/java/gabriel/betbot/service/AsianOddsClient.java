@@ -115,6 +115,8 @@ public class AsianOddsClient {
         }
         PlaceBetRequest pbr = placeBetRequestFromBet(bet);
         BetPlacementDto betPlacementDto = placeBet(pbr);
+        LOG.info(bet);
+        LOG.info(betPlacementDto);
         if (betPlacementDto.code < 0) {
             return new Bet.Builder(bet)
                     .withStatus(BetStatus.FAIL)

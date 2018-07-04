@@ -2,7 +2,7 @@ package gabriel.betbot.service;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
-import gabriel.betbot.db.Mongo;
+import gabriel.betbot.db.MongoDataSource;
 import gabriel.betbot.repositories.BetRepository;
 import gabriel.betbot.trades.Bet;
 import gabriel.betbot.trades.BetStatus;
@@ -29,13 +29,16 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import static java.util.stream.Collectors.toList;
 import javax.inject.Inject;
+import javax.inject.Named;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.scheduling.annotation.Scheduled;
 
 /**
  *
  * @author gabriel
  */
+@Named
 public class TradeService {
 
     private static final Logger LOG = LogManager.getLogger(TradeService.class.getName());
@@ -51,6 +54,7 @@ public class TradeService {
     private static final BigDecimal MAX_ODDS_CLOSE_TO_START = BigDecimal.valueOf(3);
     private static final BigDecimal MAX_ODDS_REGULAR  = BigDecimal.valueOf(3);
     private static final BigDecimal MAX_FRACTION = BigDecimal.valueOf(0.01);
+    private static final int ONE_MINUTE_IN_MILLISECONDS = 60*1000;
 
     private final AsianOddsClient asianOddsClient;
     private final BetRepository betRepository;
@@ -69,7 +73,7 @@ public class TradeService {
         Client client = new Client();
         AsianOddsClient asianOddsClient = new AsianOddsClient(client);
         BankrollService bankrollService = new BankrollService(asianOddsClient);
-        BetRepository betRepo = new BetRepository(new Mongo());
+        BetRepository betRepo = new BetRepository(new MongoDataSource());
         TradeService tradeService = new TradeService(asianOddsClient, betRepo, bankrollService);
         //tradeService.doBets();
 
@@ -83,6 +87,7 @@ public class TradeService {
         }
     }
 
+    @Scheduled(fixedDelay = ONE_MINUTE_IN_MILLISECONDS)
     public void doBets() {
         doBets(asianOddsClient.getFootballTrades());
         doBets(asianOddsClient.getBasketballTrades());

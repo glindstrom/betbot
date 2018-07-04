@@ -13,10 +13,10 @@ import org.jongo.marshall.jackson.JacksonMapper;
  * @author gabriel
  */
 @Named
-public class Mongo implements Database {
+public class MongoDataSource implements DataSource {
     private final Jongo jongo;
 
-    public Mongo() {
+    public MongoDataSource() {
         DB db = new MongoClient().getDB("betbot");
         jongo = new Jongo(db, new JacksonMapper.Builder()
                 .registerModule(new JavaTimeModule())

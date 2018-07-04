@@ -126,6 +126,7 @@ public class AsianOddsClient {
         }
         PlaceBetRequest pbr = placeBetRequestFromBet(bet);
         BetPlacementDto betPlacementDto = placeBet(pbr);
+        LOG.info(pbr);
         LOG.info(bet);
         LOG.info(betPlacementDto);
         if (betPlacementDto.code < 0 || !hasPlacementData(betPlacementDto) && !betPlacementDto.result.placementData.get(0).placedSuccessfully) {

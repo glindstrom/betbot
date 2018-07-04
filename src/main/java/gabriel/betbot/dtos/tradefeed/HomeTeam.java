@@ -31,5 +31,7 @@ public class HomeTeam {
         this.redCards = null;
         this.score = null;
     }
+    
+    
 
 }

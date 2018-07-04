@@ -238,7 +238,7 @@ public class Bet {
 
     @Override
     public String toString() {
-        return "Bet{" + "id=" + id + ", odds=" + odds + ", trueOdds=" + trueOdds + ", pinnacleOdds=" + pinnacleOdds + ", bookies=" + bookies + ", oddsType=" + oddsType + ", oddsName=" + oddsName + ", edge=" + edge + ", isFullTime=" + isFullTime + ", homeTeamName=" + homeTeamName + ", awayTeamName=" + awayTeamName + ", betDescription=" + betDescription + ", startTime=" + startTime + ", gameId=" + gameId + ", sportsType=" + sportsType + ", recommendedStake=" + optimalAmount + '}';
+        return "Bet{" + "id=" + id + ", odds=" + odds + ", trueOdds=" + trueOdds + ", pinnacleOdds=" + pinnacleOdds + ", bookies=" + bookies + ", oddsType=" + oddsType + ", oddsName=" + oddsName + ", edge=" + edge + ", isFullTime=" + isFullTime + ", homeTeamName=" + homeTeamName + ", awayTeamName=" + awayTeamName + ", betDescription=" + betDescription + ", startTime=" + startTime + ", gameId=" + gameId + ", matchId=" + matchId + ", sportsType=" + sportsType + ", optimalAmount=" + optimalAmount + ", amount=" + amount + ", minimumAmount=" + minimumAmount + ", maximumAmount=" + maximumAmount + ", status=" + status + ", created=" + created + ", bookie=" + bookie + ", betPlacementReference=" + betPlacementReference + ", marketType=" + marketType + ", favoured=" + favoured + '}';
     }
 
     public static class Builder {

@@ -134,4 +134,9 @@ public class PlaceBetRequest {
             return new PlaceBetRequest(this);
         }
     }
+
+    @Override
+    public String toString() {
+        return "PlaceBetRequest{" + "marketTypeId=" + marketTypeId + ", bookieOdds=" + bookieOdds + ", isFullTime=" + isFullTime + ", gameId=" + gameId + ", gameType=" + gameType + ", oddsName=" + oddsName + ", oddsFormat=" + oddsFormat + ", amount=" + amount + ", placeBetId=" + placeBetId + ", acceptChangeOdds=" + acceptChangeOdds + ", sportsType=" + sportsType + '}';
+    }
 }

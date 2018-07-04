@@ -108,21 +108,10 @@ public class TradeService {
                 .filter(hasPositiveEdge())
                 .collect(toList());
 
-        List<Bet> mergedBetsList = new ArrayList();
-        bets.forEach(bet -> {
-            Bet sameBet = getBetWithSameOdds(bet, mergedBetsList);
-            if (sameBet != null) {
-                Bet mergedBet = mergeBets(bet, sameBet);
-                mergedBetsList.add(mergedBet);
-            } else {
-                mergedBetsList.add(bet);
-            }
-        });
-
-        if (mergedBetsList.isEmpty()) {
+        if (bets.isEmpty()) {
             LOG.info("No positive edge bets found at this time");
         }
-        Map<Long, Bet> matchIdToBet = mergedBetsList.stream()
+        Map<Long, Bet> matchIdToBet = bets.stream()
                 .collect(Collectors.toMap(Bet::getMatchId, Function.identity(), (bet1, bet2) -> bet1.getEdge().compareTo(bet2.getEdge()) > 0 ? bet1 : bet2));
         List<Bet> placedBets = matchIdToBet.values().stream()
                 .filter(betOnGameDoesNotExist())
@@ -174,22 +163,6 @@ public class TradeService {
 
     private static int bigDecimalToInt(final BigDecimal bigDecimal) {
         return bigDecimal.toBigInteger().intValueExact();
-    }
-
-    private static Bet mergeBets(final Bet bet1, final Bet bet2) {
-        Set<String> bookies = new HashSet();
-        bookies.addAll(bet1.getBookies());
-        bookies.addAll(bet2.getBookies());
-        return new Bet.Builder(bet1)
-                .withBookies(bookies)
-                .build();
-    }
-
-    private static Bet getBetWithSameOdds(final Bet bet, final List<Bet> bets) {
-        return bets.stream()
-                .filter(sameOddsForSameBet(bet))
-                .findAny()
-                .orElse(null);
     }
 
     private static Predicate<Bet> sameOddsForSameBet(final Bet otherBet) {

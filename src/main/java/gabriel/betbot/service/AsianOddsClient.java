@@ -30,8 +30,10 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -40,6 +42,7 @@ import javax.inject.Named;
 import org.apache.http.Header;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.message.BasicHeader;
+import org.apache.http.util.EntityUtils;
 import org.apache.logging.log4j.LogManager;
 
 /**
@@ -69,6 +72,8 @@ public class AsianOddsClient {
     private long footballSince;
     private long basketballSince;
     private int currentCredit;
+    
+    private Set<Long> matchIdWithBets;
 
     @Inject
     public AsianOddsClient(final Client client) {
@@ -76,6 +81,7 @@ public class AsianOddsClient {
         this.footballSince = 0;
         this.basketballSince = 0;
         this.currentCredit = Integer.MIN_VALUE;
+        this.matchIdWithBets = new HashSet();
     }
 
     private LoginResponse login() {
@@ -90,9 +96,9 @@ public class AsianOddsClient {
         List<Header> headers = ImmutableList.of(tokenHeader, keyHeader);
         CloseableHttpResponse response = client.doGet(registerUrl, headers);
         try {
-            System.out.println(response.getEntity().getContent().toString());
+            LOG.info("Login response: {}", EntityUtils.toString(response.getEntity()));
         } catch (IOException | UnsupportedOperationException ex) {
-            Logger.getLogger(AsianOddsClient.class.getName()).log(Level.SEVERE, null, ex);
+            throw new RuntimeException(ex);
         }
     }
 
@@ -110,11 +116,13 @@ public class AsianOddsClient {
     }
 
     public Bet placeBet(final Bet bet) {
-        if (!creditCoversBetAmount(bet.getAmount())) {
-            LOG.info("Not enough funds to place bet");
-            return new Bet.Builder(bet)
-                   .withStatus(BetStatus.CANCELLED)
-                    .build();
+        if (hasBetOnMatch(bet)) {
+            LOG.info("Bet has already been made on match {}", bet.getMatchId());
+            return cancelBet(bet);
+        }
+        if (!creditCoversBetAmount(bet.getAmount()) || hasBetOnMatch(bet)) {
+            LOG.info("Not enough funds to place bet {}", bet.getId());
+            return cancelBet(bet);
         }
         PlaceBetRequest pbr = placeBetRequestFromBet(bet);
         BetPlacementDto betPlacementDto = placeBet(pbr);
@@ -128,11 +136,22 @@ public class AsianOddsClient {
                     .build();
         }
         this.currentCredit -= bet.getAmount();
+        this.matchIdWithBets.add(bet.getMatchId());
         return new Bet.Builder(bet)
                 .withStatus(BetStatus.SUCCESS)
                 .withBetPlacementReference(getBetPlacementReference(betPlacementDto))
                 .withBookie(getBookie(betPlacementDto))
                 .build();
+    }
+    
+    private Bet cancelBet(final Bet bet) {
+        return new Bet.Builder(bet)
+                   .withStatus(BetStatus.CANCELLED)
+                    .build();
+    }
+    
+    private boolean hasBetOnMatch(final Bet bet) {
+        return this.matchIdWithBets.contains(bet.getMatchId());
     }
     
     private boolean creditCoversBetAmount(final int amount) {

@@ -32,5 +32,9 @@ public class TradeFeedDto {
         this.message = null;
         this.result = null;
     }
-   
+
+    @Override
+    public String toString() {
+        return "TradeFeedDto{" + "code=" + code + ", message=" + message + ", result=" + result + '}';
+    }
 }

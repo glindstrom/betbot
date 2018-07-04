@@ -101,6 +101,9 @@ public class AsianOddsClient {
     }
 
     public AccountSummaryDto getAccountSummary() {
+        if (tokenHeader == null) {
+            this.loginAndRegister();
+        }
         List<Header> headers = ImmutableList.of(tokenHeader);
         CloseableHttpResponse response = client.doGet(ACCOUNT_SUMMARY_URL, headers);
         return JsonMapper.jsonToObject(response, AccountSummaryDto.class);
@@ -117,7 +120,9 @@ public class AsianOddsClient {
         BetPlacementDto betPlacementDto = placeBet(pbr);
         LOG.info(bet);
         LOG.info(betPlacementDto);
-        if (betPlacementDto.code < 0) {
+        if (betPlacementDto.code < 0 || !hasPlacementData(betPlacementDto) && !betPlacementDto.result.placementData.get(0).placedSuccessfully) {
+           // LOG.info("Placing bet {} failed, bet placement dto: {}", bet, betPlacementDto);
+
             return new Bet.Builder(bet)
                     .withStatus(BetStatus.FAIL)
                     .build();
@@ -249,15 +254,31 @@ public class AsianOddsClient {
     public List<Trade> getFootballTrades() {
         LOG.info("Fetching football trades");
         TradeFeedDto footballTradeFeedDto = this.getFootballFeeds();
+        if (!isTradeFeedResponseOk(footballTradeFeedDto)) {
+            this.tokenHeader = null;
+            return ImmutableList.of();
+        }
         this.footballSince = footballTradeFeedDto.result != null ? footballTradeFeedDto.result.since : this.footballSince;
         JsonMapper.writeObjectToFile(footballTradeFeedDto, "/home/gabriel/Documents/Repos/betbot/ResponseData/football.json");
 
         return ImmutableList.copyOf(tradeFeedDtoToTrades(footballTradeFeedDto));
     }
+    
+    private boolean isTradeFeedResponseOk(final TradeFeedDto dto) {
+        if (dto.code < 0) {
+            LOG.warn("Trade feed fetch returned error, dto: {}", dto);
+            return false;
+        }
+        return true;
+    }
 
     public List<Trade> getBasketballTrades() {
         LOG.info("Fetching basketball trades");
         TradeFeedDto basketTradeFeedDto = this.getBasketballFeeds();
+        if (!isTradeFeedResponseOk(basketTradeFeedDto)) {
+            this.tokenHeader = null;
+            return ImmutableList.of();
+        }
         this.basketballSince = basketTradeFeedDto.result != null ? basketTradeFeedDto.result.since : this.basketballSince;
         JsonMapper.writeObjectToFile(basketTradeFeedDto, "/home/gabriel/Documents/Repos/betbot/ResponseData/basket.json");
 

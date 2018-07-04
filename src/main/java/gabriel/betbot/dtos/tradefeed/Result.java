@@ -27,7 +27,10 @@ public class Result {
         this.since = null;
         this.sports = null;
     }
-      
-  
+
+    @Override
+    public String toString() {
+        return "Result{" + "since=" + since + '}';
+    } 
     
 }

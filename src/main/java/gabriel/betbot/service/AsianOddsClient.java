@@ -8,6 +8,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import gabriel.betbot.bankroll.Bankroll;
 import gabriel.betbot.dtos.accountsummary.AccountSummaryDto;
+import gabriel.betbot.dtos.bethistorysummary.BetHistorySummaryDto;
 import gabriel.betbot.dtos.betplacement.BetPlacementDto;
 import gabriel.betbot.dtos.betplacement.PlaceBetRequest;
 import gabriel.betbot.dtos.placementinfo.OddsPlacementDatum;
@@ -27,6 +28,8 @@ import gabriel.betbot.utils.DateUtil;
 import gabriel.betbot.utils.JsonMapper;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -34,8 +37,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -59,11 +60,19 @@ public class AsianOddsClient {
     private static final String REGISTER_URL_SUFFIX = "/Register?username=" + WEB_API_USERNAME;
     private static final String PLACEMENT_INFO_URL = BASE_URL + "/GetPlacementInfo";
     private static final String PLACE_BET_URL = BASE_URL + "/PlaceBet";
+    private static final String BET_HISTORY_SUMMARY_URL = BASE_URL + "/GetBetHistorySummary";
     private static final String TOKEN_HEADER_NAME = "AOToken";
     private static final String KEY_HEADER_NAME = "AOKey";
     private static final String ACCOUNT_SUMMARY_URL = BASE_URL + "/GetAccountSummary";
     private static final String ODDS_FORMAT = "00";
     private static final int MARKET_TYPE_TODAY = 1;
+    private static final ImmutableMap STRING_TO_BET_STATUS = new ImmutableMap.Builder<String, BetStatus>()
+            .put("8", BetStatus.REJECTED)
+            .put("Won", BetStatus.WON)
+            .put("Lost", BetStatus.LOST)
+            .put("V", BetStatus.VOIDED)
+            .put("E", BetStatus.FAIL)
+            .build();
 
     private static final org.apache.logging.log4j.Logger LOG = LogManager.getLogger(AsianOddsClient.class.getName());
 
@@ -107,13 +116,31 @@ public class AsianOddsClient {
     }
 
     public AccountSummaryDto getAccountSummary() {
-        if (tokenHeader == null) {
-            this.loginAndRegister();
-        }
+        loginIfNeeded();
         List<Header> headers = ImmutableList.of(tokenHeader);
         CloseableHttpResponse response = client.doGet(ACCOUNT_SUMMARY_URL, headers);
         return JsonMapper.jsonToObject(response, AccountSummaryDto.class);
     }
+    
+    public BetHistorySummaryDto getBetHisoBetHistorySummaryDto() {
+        loginIfNeeded();
+        LocalDate yesterday = LocalDate.now().minusDays(1);
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("MM/dd/yyyy");
+        String yesterDayAsString = dtf.format(yesterday);
+        String url = BET_HISTORY_SUMMARY_URL + "?date=" + yesterDayAsString;
+        return JsonMapper.jsonToObject(doGet(url), BetHistorySummaryDto.class);
+    }
+    
+    private void loginIfNeeded() {
+        if (tokenHeader == null) {
+            this.loginAndRegister();
+        }
+    }
+    
+    private CloseableHttpResponse doGet(final String url) {
+        List<Header> headers = ImmutableList.of(tokenHeader);
+        return client.doGet(url, headers);
+    } 
 
     public Bet placeBet(final Bet bet) {
         if (hasBetOnMatch(bet)) {

@@ -15,6 +15,9 @@ public enum BetStatus {
     CANCELLED,
     FAIL,
     OK,
-    SUCCESS;
+    SUCCESS,
+    WON,
+    LOST,
+    VOIDED;
     
 }

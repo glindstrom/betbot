@@ -15,7 +15,9 @@ import gabriel.betbot.utils.Client;
 import gabriel.betbot.utils.KellyCalculator;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -52,9 +54,9 @@ public class TradeService {
     private static final BigDecimal MIN_EDGE_NORMAL = BigDecimal.valueOf(0.02);
     private static final BigDecimal MIN_EDGE_EARLY = BigDecimal.valueOf(0.04);
     private static final BigDecimal MAX_ODDS_CLOSE_TO_START = BigDecimal.valueOf(3);
-    private static final BigDecimal MAX_ODDS_REGULAR  = BigDecimal.valueOf(3);
+    private static final BigDecimal MAX_ODDS_REGULAR = BigDecimal.valueOf(3);
     private static final BigDecimal MAX_FRACTION = BigDecimal.valueOf(0.01);
-    private static final int ONE_MINUTE_IN_MILLISECONDS = 60*1000;
+    private static final int ONE_MINUTE_IN_MILLISECONDS = 60 * 1000;
 
     private final AsianOddsClient asianOddsClient;
     private final BetRepository betRepository;
@@ -70,21 +72,25 @@ public class TradeService {
     }
 
     public static void main(String[] args) {
-        Client client = new Client();
-        AsianOddsClient asianOddsClient = new AsianOddsClient(client);
-        BankrollService bankrollService = new BankrollService(asianOddsClient);
-        BetRepository betRepo = new BetRepository(new MongoDataSource());
-        TradeService tradeService = new TradeService(asianOddsClient, betRepo, bankrollService);
-        //tradeService.doBets();
-
-        try {
-            while (true) {
-                tradeService.doBets();
-                Thread.sleep(2 * 60 * 1000);
-            }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+//        Client client = new Client();
+//        AsianOddsClient asianOddsClient = new AsianOddsClient(client);
+//        BankrollService bankrollService = new BankrollService(asianOddsClient);
+//        BetRepository betRepo = new BetRepository(new MongoDataSource());
+//        TradeService tradeService = new TradeService(asianOddsClient, betRepo, bankrollService);
+//        //tradeService.doBets();
+//
+//        try {
+//            while (true) {
+//                tradeService.doBets();
+//                Thread.sleep(2 * 60 * 1000);
+//            }
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
+        LocalDate yesterday = LocalDate.now().minusDays(1);
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("MM/dd/yyyy");
+        String yesterDayAsString = dtf.format(yesterday);
+        System.out.println(yesterDayAsString);
     }
 
     @Scheduled(fixedDelay = ONE_MINUTE_IN_MILLISECONDS)
@@ -135,7 +141,7 @@ public class TradeService {
     }
 
     private boolean betOnGameAlreadyExists(final Bet bet) {
-        List<Bet> bets = betRepository.findByMatchIdAndStatus(bet.getMatchId(), BetStatus.SUCCESS); 
+        List<Bet> bets = betRepository.findByMatchIdAndStatus(bet.getMatchId(), BetStatus.SUCCESS);
         return !bets.isEmpty();
     }
 
@@ -263,7 +269,7 @@ public class TradeService {
             return false;
         }
         return oddsAreLessThanOrEqualTo(bet.getOdds(), MAX_ODDS_REGULAR)
-               && edgeIsGreaterThan(bet.getEdge(), MIN_EDGE_EARLY);
+                && edgeIsGreaterThan(bet.getEdge(), MIN_EDGE_EARLY);
     }
 
     private static boolean startsInLessThanNHours(final LocalDateTime startTime, final long hours) {
@@ -274,7 +280,7 @@ public class TradeService {
     private static boolean edgeIsGreaterThan(final BigDecimal edge, final BigDecimal minimum) {
         return edge.compareTo(minimum) > 0;
     }
-    
+
     private static boolean oddsAreLessThanOrEqualTo(final BigDecimal odds, final BigDecimal maximum) {
         return odds.compareTo(maximum) <= 0;
     }

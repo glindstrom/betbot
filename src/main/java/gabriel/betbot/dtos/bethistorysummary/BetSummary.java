@@ -3,41 +3,9 @@ package gabriel.betbot.dtos.bethistorysummary;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import org.apache.commons.lang.builder.ToStringBuilder;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({
-    "AwayName",
-    "AwayScore",
-    "BetPlacementMessage",
-    "BetPlacementReference",
-    "BetType",
-    "Bookie",
-    "ClientType",
-    "Currency",
-    "Favoured",
-    "FullTimeAwayScore",
-    "FullTimeHomeScore",
-    "GameType",
-    "HalfTimeAwayScore",
-    "HalfTimeHomeScore",
-    "HdpOrGoal",
-    "HomeName",
-    "HomeScore",
-    "InternalReferenceNumber",
-    "KickoffTime",
-    "LeagueName",
-    "Odds",
-    "OddsType",
-    "Pnl",
-    "PnlInfo",
-    "SportsType",
-    "Stake",
-    "Status",
-    "Term",
-    "TicketDate"
-})
 public class BetSummary {
 
     @JsonProperty("AwayName")
@@ -139,7 +107,6 @@ public class BetSummary {
      * @param clientType
      */
     public BetSummary(String awayName, String awayScore, String betPlacementMessage, String betPlacementReference, String betType, String bookie, Integer clientType, String currency, Integer favoured, String fullTimeAwayScore, String fullTimeHomeScore, String gameType, String halfTimeAwayScore, String halfTimeHomeScore, String hdpOrGoal, String homeName, String homeScore, String internalReferenceNumber, Integer kickoffTime, String leagueName, Double odds, String oddsType, Integer pnl, String pnlInfo, Integer sportsType, Integer stake, String status, String term, Integer ticketDate) {
-        super();
         this.awayName = awayName;
         this.awayScore = awayScore;
         this.betPlacementMessage = betPlacementMessage;

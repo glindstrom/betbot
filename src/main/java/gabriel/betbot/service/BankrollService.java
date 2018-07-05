@@ -13,6 +13,8 @@ import javax.inject.Named;
 @Named
 public class BankrollService {
     
+   private static final BigDecimal RESERVE = BigDecimal.valueOf(2700);
+    
    private final AsianOddsClient asianOddsClient;
    private Bankroll bankroll;
 
@@ -26,7 +28,7 @@ public class BankrollService {
          if (bankroll == null) {
              bankroll = asianOddsClient.getBankroll();
          }
-        return bankroll.getOutstanding().add(bankroll.getCredit());
+        return bankroll.getOutstanding().add(bankroll.getCredit()).add(RESERVE);
     }
      
     public void clear() {

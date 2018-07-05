@@ -91,6 +91,8 @@ public class TradeService {
     public void doBets() {
         doBets(asianOddsClient.getFootballTrades());
         doBets(asianOddsClient.getBasketballTrades());
+        asianOddsClient.clearMatchIdCache();
+        bankrollService.clear();
     }
 
     private void doBets(final List<Trade> tradesList) {

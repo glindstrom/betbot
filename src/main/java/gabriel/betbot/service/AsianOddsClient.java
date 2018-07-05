@@ -428,6 +428,10 @@ public class AsianOddsClient {
         }
         return ImmutableMap.copyOf(bookieOddsMap);
     }
+    
+    public void clearMatchIdCache() {
+        this.matchIdWithBets = new HashSet();
+    }
 
     private static Odds createOdds(final String bookie, final String[] oddsArray, final OddsType oddsType) {
         Odds.Builder oddsBuilder = new Odds.Builder().withBookie(bookie);

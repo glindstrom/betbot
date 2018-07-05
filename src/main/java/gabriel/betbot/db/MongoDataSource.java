@@ -17,7 +17,7 @@ public class MongoDataSource implements DataSource {
     private final Jongo jongo;
 
     public MongoDataSource() {
-        DB db = new MongoClient().getDB("betbot");
+        DB db = new MongoClient().getDB("betbot-prod");
         jongo = new Jongo(db, new JacksonMapper.Builder()
                 .registerModule(new JavaTimeModule())
                 .build());

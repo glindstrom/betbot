@@ -9,6 +9,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.logging.Level;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.util.EntityUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -23,10 +24,12 @@ public class JsonMapper {
     public static <T> T jsonToObject(final CloseableHttpResponse response,
             final Class<T> classType) {
         ObjectMapper objectMapper = getObjectMapper();
+        String json = "";
         try {
-            return objectMapper.readValue(response.getEntity().getContent(), classType);
+            json = EntityUtils.toString(response.getEntity());
+            return objectMapper.readValue(json, classType);
         } catch (IOException ex) {
-            LOG.error("Error converting object to json", ex);
+            LOG.error("Error converting string {} to json", json);
             throw new RuntimeException(ex);
         }
     }

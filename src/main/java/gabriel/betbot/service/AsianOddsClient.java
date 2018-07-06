@@ -41,6 +41,7 @@ import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Named;
 import org.apache.http.Header;
+import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.util.EntityUtils;
@@ -293,7 +294,7 @@ public class AsianOddsClient {
     public List<Trade> getFootballTrades() {
         LOG.info("Fetching football trades");
         TradeFeedDto footballTradeFeedDto = this.getFootballFeeds();
-        if (!isTradeFeedResponseOk(footballTradeFeedDto)) {
+        if (footballTradeFeedDto == null || !isTradeFeedResponseOk(footballTradeFeedDto)) {
             this.tokenHeader = null;
             return ImmutableList.of();
         }
@@ -314,7 +315,7 @@ public class AsianOddsClient {
     public List<Trade> getBasketballTrades() {
         LOG.info("Fetching basketball trades");
         TradeFeedDto basketTradeFeedDto = this.getBasketballFeeds();
-        if (!isTradeFeedResponseOk(basketTradeFeedDto)) {
+        if (basketTradeFeedDto == null || !isTradeFeedResponseOk(basketTradeFeedDto)) {
             this.tokenHeader = null;
             return ImmutableList.of();
         }
@@ -487,9 +488,7 @@ public class AsianOddsClient {
     }
 
     public TradeFeedDto getTradeFeeds(final SportsType sportsType) {
-        if (tokenHeader == null) {
-            loginAndRegister();
-        }
+        loginIfNeeded();
         List<Header> headers = ImmutableList.of(tokenHeader);
         String feedUrl = BASE_URL + "/GetFeeds?marketTypeId=" + MARKET_TYPE_TODAY + "&OddsFormat=" + ODDS_FORMAT + "&SportsType=" + sportsType.getId();
         String since = "";
@@ -500,7 +499,18 @@ public class AsianOddsClient {
         }
         feedUrl += since;
         CloseableHttpResponse response = client.doGet(feedUrl, headers);
+        if (!responseOk(response)) {
+            return null;
+        }
         return JsonMapper.jsonToObject(response, TradeFeedDto.class);
+    }
+    
+    private boolean responseOk(final CloseableHttpResponse response) {
+        if (response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
+            LOG.error("Error fetching trades: {}", response.getStatusLine());
+            return false;
+        }
+        return true;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)

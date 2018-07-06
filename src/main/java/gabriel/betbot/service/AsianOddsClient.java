@@ -66,13 +66,6 @@ public class AsianOddsClient {
     private static final String ACCOUNT_SUMMARY_URL = BASE_URL + "/GetAccountSummary";
     private static final String ODDS_FORMAT = "00";
     private static final int MARKET_TYPE_TODAY = 1;
-    private static final ImmutableMap STRING_TO_BET_STATUS = new ImmutableMap.Builder<String, BetStatus>()
-            .put("8", BetStatus.REJECTED)
-            .put("Won", BetStatus.WON)
-            .put("Lost", BetStatus.LOST)
-            .put("V", BetStatus.VOIDED)
-            .put("E", BetStatus.FAIL)
-            .build();
 
     private static final org.apache.logging.log4j.Logger LOG = LogManager.getLogger(AsianOddsClient.class.getName());
 
@@ -122,11 +115,10 @@ public class AsianOddsClient {
         return JsonMapper.jsonToObject(response, AccountSummaryDto.class);
     }
     
-    public BetHistorySummaryDto getBetHisoBetHistorySummaryDto() {
+    public BetHistorySummaryDto getBetHisoBetHistorySummaryDto(final LocalDate date) {
         loginIfNeeded();
-        LocalDate yesterday = LocalDate.now().minusDays(1);
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("MM/dd/yyyy");
-        String yesterDayAsString = dtf.format(yesterday);
+        String yesterDayAsString = dtf.format(date);
         String url = BET_HISTORY_SUMMARY_URL + "?date=" + yesterDayAsString;
         return JsonMapper.jsonToObject(doGet(url), BetHistorySummaryDto.class);
     }

@@ -3,6 +3,7 @@ package gabriel.betbot.dtos.bethistorysummary;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.math.BigDecimal;
 import org.apache.commons.lang.builder.ToStringBuilder;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -45,7 +46,7 @@ public class BetSummary {
     @JsonProperty("InternalReferenceNumber")
     public String internalReferenceNumber;
     @JsonProperty("KickoffTime")
-    public Integer kickoffTime;
+    public Long kickoffTime;
     @JsonProperty("LeagueName")
     public String leagueName;
     @JsonProperty("Odds")
@@ -53,19 +54,19 @@ public class BetSummary {
     @JsonProperty("OddsType")
     public String oddsType;
     @JsonProperty("Pnl")
-    public Integer pnl;
+    public BigDecimal pnl;
     @JsonProperty("PnlInfo")
     public String pnlInfo;
     @JsonProperty("SportsType")
     public Integer sportsType;
     @JsonProperty("Stake")
-    public Integer stake;
+    public BigDecimal stake;
     @JsonProperty("Status")
     public String status;
     @JsonProperty("Term")
     public String term;
     @JsonProperty("TicketDate")
-    public Integer ticketDate;
+    public Long ticketDate;
 
     /**
      * No args constructor for use in serialization
@@ -106,7 +107,7 @@ public class BetSummary {
      * @param hdpOrGoal
      * @param clientType
      */
-    public BetSummary(String awayName, String awayScore, String betPlacementMessage, String betPlacementReference, String betType, String bookie, Integer clientType, String currency, Integer favoured, String fullTimeAwayScore, String fullTimeHomeScore, String gameType, String halfTimeAwayScore, String halfTimeHomeScore, String hdpOrGoal, String homeName, String homeScore, String internalReferenceNumber, Integer kickoffTime, String leagueName, Double odds, String oddsType, Integer pnl, String pnlInfo, Integer sportsType, Integer stake, String status, String term, Integer ticketDate) {
+    public BetSummary(String awayName, String awayScore, String betPlacementMessage, String betPlacementReference, String betType, String bookie, Integer clientType, String currency, Integer favoured, String fullTimeAwayScore, String fullTimeHomeScore, String gameType, String halfTimeAwayScore, String halfTimeHomeScore, String hdpOrGoal, String homeName, String homeScore, String internalReferenceNumber, Long kickoffTime, String leagueName, Double odds, String oddsType, BigDecimal pnl, String pnlInfo, Integer sportsType, BigDecimal stake, String status, String term, Long ticketDate) {
         this.awayName = awayName;
         this.awayScore = awayScore;
         this.betPlacementMessage = betPlacementMessage;

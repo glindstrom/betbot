@@ -9,16 +9,10 @@ package gabriel.betbot.trades;
  *
  * @author gabriel
  */
-public enum BetStatus {
-    
-    REJECTED,
-    CANCELLED,
-    FAIL,
-    ERROR,
-    UNKNOWN,
-    OK,
-    SUCCESS,
-    VOIDED,
-    SETTLED;
-    
+public enum PnlStatus {
+    WON,
+    HALF_WON,
+    LOST,
+    HALF_LOST,
+    STAKE_RETURNED;
 }

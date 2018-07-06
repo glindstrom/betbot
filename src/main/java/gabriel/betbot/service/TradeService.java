@@ -142,18 +142,16 @@ public class TradeService {
     }
 
     private static Bet setAmount(final Bet bet) {
+        if (bet.getOptimalAmount() < bet.getMinimumAmount()) {
+            LOG.info("Optimal amount is less than minumum amount {}", bet);
+            return new Bet.Builder(bet)
+                    .withStatus(BetStatus.CANCELLED)
+                    .build();
+        }
+        int stake = Math.min(bet.getOptimalAmount(), bet.getMaximumAmount());
         return new Bet.Builder(bet)
-                .withAmount(bet.getMinimumAmount())
+                .withAmount(stake)
                 .build();
-//        if (bet.getOptimalAmount() < bet.getMinimumAmount()) {
-//            return new Bet.Builder(bet)
-//                    .withStatus(BetStatus.CANCELLED)
-//                    .build();
-//        }
-//        int stake = Math.min(bet.getOptimalAmount(), bet.getMaximumAmount());
-//        return new Bet.Builder(bet)
-//                .withAmount(stake)
-//                .build();
     }
 
     private Bet calculateAndAddRecommendedStake(final Bet bet) {

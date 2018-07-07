@@ -226,6 +226,10 @@ public class AsianOddsClient {
         CloseableHttpResponse response = client.doPost(PLACE_BET_URL, ImmutableList.of(tokenHeader), JsonMapper.objectToString(pbr));
         return JsonMapper.jsonToObject(response, BetPlacementDto.class);
     }
+    
+    public void resetCurrentCredit() {
+        this.currentCredit = Integer.MIN_VALUE;
+    }
 
     public Bet addPlacementInfo(final Bet bet) {
         PlacementInfoRequest pir = placementInfoRequestFromBet(bet);

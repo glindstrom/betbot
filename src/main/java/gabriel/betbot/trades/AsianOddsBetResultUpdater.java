@@ -51,7 +51,7 @@ public class AsianOddsBetResultUpdater {
     }
 
     public void updateResults(final LocalDate date) {
-        BetHistorySummaryDto dto = asianOddsClient.getBetHisoBetHistorySummaryDto(date);
+        BetHistorySummaryDto dto = asianOddsClient.getBetHistorySummaryDto(date);
         if (hasSummary(dto)) {
             dto.result.betSummaries.stream()
                     .filter(bs -> !EXCLUDES_STATUSES.contains(bs.status))

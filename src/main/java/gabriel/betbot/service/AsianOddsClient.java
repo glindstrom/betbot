@@ -116,7 +116,7 @@ public class AsianOddsClient {
         return JsonMapper.jsonToObject(response, AccountSummaryDto.class);
     }
     
-    public BetHistorySummaryDto getBetHisoBetHistorySummaryDto(final LocalDate date) {
+    public BetHistorySummaryDto getBetHistorySummaryDto(final LocalDate date) {
         loginIfNeeded();
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("MM/dd/yyyy");
         String yesterDayAsString = dtf.format(date);

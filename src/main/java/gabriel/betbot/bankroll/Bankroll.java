@@ -32,6 +32,14 @@ public class Bankroll {
         return todayPnL;
     }
 
+    public BigDecimal getYesterdayPnl() {
+        return yesterdayPnl;
+    }
+    
+    public BigDecimal getTotal() {
+        return this.credit.add(this.outstanding);
+    }
+
     @Override
     public String toString() {
         return "Bankroll{" + "credit=" + credit + ", outstanding=" + outstanding + ", todayPnL=" + todayPnL + ", yesterdayPnl=" + yesterdayPnl + '}';

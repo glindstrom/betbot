@@ -129,7 +129,7 @@ public class TradeService {
                 .map(betRepository::saveAndGet)
                 .collect((Collectors.toList()));
         LOG.info("Number of bets: {}", placedBets.size());
-        LOG.info(asianOddsClient.getBankroll());
+        LOG.info(BankrollService.bankrollToString(asianOddsClient.getBankroll()));
         this.bankrollService.clear();
     }
 

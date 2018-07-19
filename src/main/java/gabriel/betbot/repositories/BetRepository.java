@@ -42,5 +42,9 @@ public class BetRepository {
     public Bet findByBetPlacementReferece(final String betPlacementReference) {
         return bets.findOne("{betPlacementReference: #}", betPlacementReference).as(Bet.class);
     }
+    
+    public List<Bet> findAll() {
+        return ImmutableList.copyOf(bets.find().as(Bet.class).iterator());
+    }
 
 }

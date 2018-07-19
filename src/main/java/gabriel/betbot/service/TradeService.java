@@ -10,6 +10,8 @@ import gabriel.betbot.trades.Odds;
 import gabriel.betbot.trades.OddsName;
 import gabriel.betbot.trades.OddsType;
 import gabriel.betbot.trades.Trade;
+import static gabriel.betbot.utils.BetUtil.edgeIsGreaterThan;
+import static gabriel.betbot.utils.BetUtil.oddsAreLessThanOrEqualTo;
 import gabriel.betbot.utils.KellyCalculator;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -43,17 +45,17 @@ public class TradeService {
     private static final String PINNACLE = "PIN";
     private static final int NUM_DECIMALS_EDGE = 4;
     private static final int NUM_DECIMALS_CALCULATON = 10;
-    private static final long CLOSE_TO_START_HOURS = 2;
-    private static final long NORMAL_HOURS = 7;
-    private static final long EARLY_HOURS = 10;
-    private static final BigDecimal MIN_EDGE_CLOSE_TO_START = BigDecimal.valueOf(0.01);
-    private static final BigDecimal MIN_EDGE_NORMAL = BigDecimal.valueOf(0.02);
-    private static final BigDecimal MIN_EDGE_EARLY = BigDecimal.valueOf(0.04);
+    public static final long CLOSE_TO_START_HOURS = 2;
+    public static final long NORMAL_HOURS = 7;
+    public static final long EARLY_HOURS = 10;
+    private static final BigDecimal MIN_EDGE_CLOSE_TO_START = BigDecimal.valueOf(0.011);
+    private static final BigDecimal MIN_EDGE_NORMAL = BigDecimal.valueOf(0.05);
+    private static final BigDecimal MIN_EDGE_EARLY = BigDecimal.valueOf(0.05);
     private static final BigDecimal MAX_ODDS_CLOSE_TO_START = BigDecimal.valueOf(3);
     private static final BigDecimal MAX_ODDS_REGULAR = BigDecimal.valueOf(3);
     private static final BigDecimal MAX_FRACTION = BigDecimal.valueOf(0.01);
     private static final int ONE_MINUTE_IN_MILLISECONDS = 60 * 1000;
-    private static final int MAX_CLOSING_ODDS_MINUTES = 2;
+    private static final int MAX_CLOSING_ODDS_MINUTES = 5;
 
     private final AsianOddsClient asianOddsClient;
     private final BetRepository betRepository;
@@ -111,6 +113,7 @@ public class TradeService {
                 .map(this::addEdges)
                 .map(trade -> tradeToBets(trade))
                 .flatMap(Collection::stream)
+                .map(bet -> addClosingOddsToExistingBet(bet))
                 .filter(hasPositiveEdge())
                 .collect(toList());
 
@@ -120,7 +123,6 @@ public class TradeService {
         Map<Long, Bet> matchIdToBet = bets.stream()
                 .collect(Collectors.toMap(Bet::getMatchId, Function.identity(), (bet1, bet2) -> bet1.getEdge().compareTo(bet2.getEdge()) > 0 ? bet1 : bet2));
         List<Bet> placedBets = matchIdToBet.values().stream()
-                .map(bet -> addClosingOddsToExistingBet(bet))
                 .filter(betOnGameDoesNotExist())
                 .map(bet -> calculateAndAddRecommendedStake(bet))
                 .map(asianOddsClient::addPlacementInfo)
@@ -147,11 +149,10 @@ public class TradeService {
         List<Bet> placedBets = betRepository.findByMatchIdAndStatus(bet.getMatchId(), BetStatus.SUCCESS);
         Bet placedBet = placedBets.stream()
                 .filter(b -> b.isIsFullTime() == bet.isIsFullTime()
-                        && b.getGameId() == bet.getGameId()
                         && b.getOddsName() == bet.getOddsName()
                         && b.getOddsType() == bet.getOddsType()
-                        && (b.getBetDescription() == null && bet.getBetDescription() == null 
-                                || b.getBetDescription().equals(bet.getBetDescription())))
+                        && ((b.getBetDescription() == null && bet.getBetDescription() == null) 
+                                || (b.getBetDescription().equals(bet.getBetDescription()))))
                 .findAny()
                 .orElse(null);
         if (placedBet != null) {
@@ -288,14 +289,6 @@ public class TradeService {
     private static boolean startsInLessThanNHours(final LocalDateTime startTime, final long hours) {
         LocalDateTime now = LocalDateTime.now();
         return ChronoUnit.HOURS.between(now, startTime) < hours;
-    }
-
-    private static boolean edgeIsGreaterThan(final BigDecimal edge, final BigDecimal minimum) {
-        return edge.compareTo(minimum) > 0;
-    }
-
-    private static boolean oddsAreLessThanOrEqualTo(final BigDecimal odds, final BigDecimal maximum) {
-        return odds.compareTo(maximum) <= 0;
     }
 
     private static List<Bet> tradeToBets(final Trade trade) {

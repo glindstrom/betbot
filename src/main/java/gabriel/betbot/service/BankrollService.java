@@ -42,8 +42,8 @@ public class BankrollService {
     public static String bankrollToString(final Bankroll bankroll) {
         return "Credit: " + bankroll.getCredit()
                 + ", Outstanding: " + bankroll.getOutstanding()
-                + ", Total bankroll: " + getTotal(bankroll)
-                + ", TodayPnl: " + bankroll.getTodayPnL()
-                + ", YesterdayPnl: " + bankroll.getYesterdayPnl();
+                + ", Total: " + getTotal(bankroll)
+                + ", Today: " + bankroll.getTodayPnL()
+                + ", Yesterday: " + bankroll.getYesterdayPnl();
     }
 }

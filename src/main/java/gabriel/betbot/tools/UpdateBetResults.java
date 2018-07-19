@@ -21,7 +21,7 @@ public class UpdateBetResults {
         AsianOddsClient asianOddsClient = new AsianOddsClient(client);
         BetRepository betRepo = new BetRepository(new MongoDataSource());
         AsianOddsBetResultUpdater updater = new AsianOddsBetResultUpdater(asianOddsClient, betRepo);
-        LocalDate date = LocalDate.now();
+        LocalDate date = LocalDate.now().minusDays(1);
         updater.updateResults(date);
     }
 

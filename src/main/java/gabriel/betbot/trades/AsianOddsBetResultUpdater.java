@@ -31,6 +31,7 @@ public class AsianOddsBetResultUpdater {
             .put("Won", PnlStatus.WON)
             .put("Half lost", PnlStatus.HALF_LOST)
             .put("Half won", PnlStatus.HALF_WON)
+            .put("Lost", PnlStatus.LOST)
             .put("Stake returned", PnlStatus.STAKE_RETURNED)
             .build();
 
@@ -74,9 +75,9 @@ public class AsianOddsBetResultUpdater {
             return null;
         }
         BetStatus betStatus = STRING_TO_BET_STATUS.get(betSummary.status);
-        if (bet.getStatus() == betStatus) {
-            return bet;
-        }
+//        if (bet.getStatus() == betStatus) {
+//            return bet;
+//        }
         Bet.Builder betBuilder = new Bet.Builder(bet)
                 .withStatus(betStatus)
                 .withBetPlacementMessage(betSummary.betPlacementMessage);

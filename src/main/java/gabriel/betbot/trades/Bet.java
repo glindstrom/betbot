@@ -21,6 +21,7 @@ public class Bet {
     private final BigDecimal odds;
     private final BigDecimal trueOdds;
     private final BigDecimal pinnacleOdds;
+    private final BigDecimal closingOdds;
     private final Set<String> bookies;
     private final OddsType oddsType;
     private final OddsName oddsName;
@@ -56,6 +57,7 @@ public class Bet {
             @JsonProperty("odds") final BigDecimal odds,
             @JsonProperty("trueOdds") final BigDecimal trueOdds,
             @JsonProperty("pinnacleOdds") final BigDecimal pinnacleOdds,
+            @JsonProperty("closingOdds") final BigDecimal closingOdds,
             @JsonProperty("bookies") final Set<String> bookies,
             @JsonProperty("oddsType") final OddsType oddsType,
             @JsonProperty("oddsName") final OddsName oddsName,
@@ -86,6 +88,7 @@ public class Bet {
         this.odds = odds;
         this.trueOdds = trueOdds;
         this.pinnacleOdds = pinnacleOdds;
+        this.closingOdds = closingOdds;
         this.bookies = bookies;
         this.oddsType = oddsType;
         this.oddsName = oddsName;
@@ -119,6 +122,7 @@ public class Bet {
         this.odds = builder.odds;
         this.trueOdds = builder.trueOdds;
         this.pinnacleOdds = builder.pinnacleOdds;
+        this.closingOdds = builder.closingOdds;
         this.bookies = builder.bookies;
         this.gameId = builder.gameId;
         this.matchId = builder.matchId;
@@ -278,6 +282,7 @@ public class Bet {
         private BigDecimal odds;
         private BigDecimal trueOdds;
         private BigDecimal pinnacleOdds;
+        private BigDecimal closingOdds;
         private Set<String> bookies;
         private OddsType oddsType;
         private OddsName oddsName;
@@ -404,6 +409,11 @@ public class Bet {
 
         public Builder withPinnacleOdds(final BigDecimal pinnacleOdds) {
             this.pinnacleOdds = pinnacleOdds;
+            return this;
+        }
+        
+        public Builder withClosingOdds(final BigDecimal closingOdds) {
+            this.closingOdds = closingOdds;
             return this;
         }
 

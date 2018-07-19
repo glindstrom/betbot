@@ -53,6 +53,7 @@ public class TradeService {
     private static final BigDecimal MAX_ODDS_REGULAR = BigDecimal.valueOf(3);
     private static final BigDecimal MAX_FRACTION = BigDecimal.valueOf(0.01);
     private static final int ONE_MINUTE_IN_MILLISECONDS = 60 * 1000;
+    private static final int MAX_CLOSING_ODDS_MINUTES = 2;
 
     private final AsianOddsClient asianOddsClient;
     private final BetRepository betRepository;
@@ -119,6 +120,7 @@ public class TradeService {
         Map<Long, Bet> matchIdToBet = bets.stream()
                 .collect(Collectors.toMap(Bet::getMatchId, Function.identity(), (bet1, bet2) -> bet1.getEdge().compareTo(bet2.getEdge()) > 0 ? bet1 : bet2));
         List<Bet> placedBets = matchIdToBet.values().stream()
+                .map(bet -> addClosingOddsToExistingBet(bet))
                 .filter(betOnGameDoesNotExist())
                 .map(bet -> calculateAndAddRecommendedStake(bet))
                 .map(asianOddsClient::addPlacementInfo)
@@ -135,6 +137,30 @@ public class TradeService {
 
     private Predicate<Bet> betOnGameDoesNotExist() {
         return bet -> !betOnGameAlreadyExists(bet);
+    }
+
+    private Bet addClosingOddsToExistingBet(final Bet bet) {
+        LocalDateTime now = LocalDateTime.now();
+        if (ChronoUnit.MINUTES.between(now, bet.getStartTime()) > MAX_CLOSING_ODDS_MINUTES) {
+            return bet;
+        }
+        List<Bet> placedBets = betRepository.findByMatchIdAndStatus(bet.getMatchId(), BetStatus.SUCCESS);
+        Bet placedBet = placedBets.stream()
+                .filter(b -> b.isIsFullTime() == bet.isIsFullTime()
+                        && b.getGameId() == bet.getGameId()
+                        && b.getOddsName() == bet.getOddsName()
+                        && b.getOddsType() == bet.getOddsType()
+                        && (b.getBetDescription() == null && bet.getBetDescription() == null 
+                                || b.getBetDescription().equals(bet.getBetDescription())))
+                .findAny()
+                .orElse(null);
+        if (placedBet != null) {
+            Bet betWithClosingOdds = new Bet.Builder(placedBet)
+                    .withClosingOdds(bet.getPinnacleOdds())
+                    .build();
+            betRepository.save(betWithClosingOdds);
+        }
+        return bet;
     }
 
     private boolean betOnGameAlreadyExists(final Bet bet) {
@@ -166,14 +192,6 @@ public class TradeService {
 
     private static int bigDecimalToInt(final BigDecimal bigDecimal) {
         return bigDecimal.toBigInteger().intValueExact();
-    }
-
-    private static Predicate<Bet> sameOddsForSameBet(final Bet otherBet) {
-        return bet -> {
-            return bet.getOdds().compareTo(otherBet.getOdds()) == 0
-                    && bet.getGameId() == otherBet.getGameId()
-                    && bet.getOddsName() == otherBet.getOddsName();
-        };
     }
 
     private Trade addTrueOdds(final Trade trade) {

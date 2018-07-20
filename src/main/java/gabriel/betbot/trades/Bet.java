@@ -22,6 +22,7 @@ public class Bet {
     private final BigDecimal trueOdds;
     private final BigDecimal pinnacleOdds;
     private final BigDecimal closingOdds;
+    private final BigDecimal trueClosingOdds;
     private final Set<String> bookies;
     private final OddsType oddsType;
     private final OddsName oddsName;
@@ -58,6 +59,7 @@ public class Bet {
             @JsonProperty("trueOdds") final BigDecimal trueOdds,
             @JsonProperty("pinnacleOdds") final BigDecimal pinnacleOdds,
             @JsonProperty("closingOdds") final BigDecimal closingOdds,
+            @JsonProperty("trueClosingOdds") final BigDecimal trueClosingOdds,
             @JsonProperty("bookies") final Set<String> bookies,
             @JsonProperty("oddsType") final OddsType oddsType,
             @JsonProperty("oddsName") final OddsName oddsName,
@@ -89,6 +91,7 @@ public class Bet {
         this.trueOdds = trueOdds;
         this.pinnacleOdds = pinnacleOdds;
         this.closingOdds = closingOdds;
+        this.trueClosingOdds = trueClosingOdds;
         this.bookies = bookies;
         this.oddsType = oddsType;
         this.oddsName = oddsName;
@@ -123,6 +126,7 @@ public class Bet {
         this.trueOdds = builder.trueOdds;
         this.pinnacleOdds = builder.pinnacleOdds;
         this.closingOdds = builder.closingOdds;
+        this.trueClosingOdds = builder.trueClosingOdds;
         this.bookies = builder.bookies;
         this.gameId = builder.gameId;
         this.matchId = builder.matchId;
@@ -271,6 +275,10 @@ public class Bet {
         return betPlacementMessage;
     }
 
+    public BigDecimal getTrueClosingOdds() {
+        return trueClosingOdds;
+    }
+
     @Override
     public String toString() {
         return "Bet{" + "id=" + id + ", odds=" + odds + ", trueOdds=" + trueOdds + ", pinnacleOdds=" + pinnacleOdds + ", bookies=" + bookies + ", oddsType=" + oddsType + ", oddsName=" + oddsName + ", edge=" + edge + ", isFullTime=" + isFullTime + ", homeTeamName=" + homeTeamName + ", awayTeamName=" + awayTeamName + ", betDescription=" + betDescription + ", startTime=" + startTime + ", gameId=" + gameId + ", matchId=" + matchId + ", sportsType=" + sportsType + ", optimalAmount=" + optimalAmount + ", amount=" + amount + ", minimumAmount=" + minimumAmount + ", maximumAmount=" + maximumAmount + ", status=" + status + ", created=" + created + ", bookie=" + bookie + ", betPlacementReference=" + betPlacementReference + ", marketType=" + marketType + ", favoured=" + favoured + ", pnlStatus=" + pnlStatus + ", actualStake=" + actualStake + ", pnl=" + pnl + ", betPlacementMessage=" + betPlacementMessage + '}';
@@ -283,6 +291,7 @@ public class Bet {
         private BigDecimal trueOdds;
         private BigDecimal pinnacleOdds;
         private BigDecimal closingOdds;
+        private BigDecimal trueClosingOdds;
         private Set<String> bookies;
         private OddsType oddsType;
         private OddsName oddsName;
@@ -316,6 +325,8 @@ public class Bet {
             this.odds = source.odds;
             this.trueOdds = source.trueOdds;
             this.pinnacleOdds = source.pinnacleOdds;
+            this.closingOdds = source.closingOdds;
+            this.trueClosingOdds = source.trueClosingOdds;
             this.bookies = source.bookies;
             this.oddsType = source.oddsType;
             this.oddsName = source.oddsName;
@@ -414,6 +425,11 @@ public class Bet {
         
         public Builder withClosingOdds(final BigDecimal closingOdds) {
             this.closingOdds = closingOdds;
+            return this;
+        }
+        
+        public Builder withTrueClosingOdds(final BigDecimal trueClosingOdds) {
+            this.trueClosingOdds = trueClosingOdds;
             return this;
         }
 

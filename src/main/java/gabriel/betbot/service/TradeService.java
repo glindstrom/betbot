@@ -158,6 +158,7 @@ public class TradeService {
         if (placedBet != null) {
             Bet betWithClosingOdds = new Bet.Builder(placedBet)
                     .withClosingOdds(bet.getPinnacleOdds())
+                    .withTrueClosingOdds(bet.getTrueOdds())
                     .build();
             betRepository.save(betWithClosingOdds);
         }

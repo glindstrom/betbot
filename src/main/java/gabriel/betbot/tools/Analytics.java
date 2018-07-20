@@ -21,22 +21,33 @@ import org.apache.logging.log4j.Logger;
  * @author gabriel
  */
 public class Analytics {
-    
-     private static final Logger LOG = LogManager.getLogger(Analytics.class.getName());
+
+    private static final Logger LOG = LogManager.getLogger(Analytics.class.getName());
+
+    private final BetRepository betRepository;
+
+    public Analytics() {
+        this.betRepository = new BetRepository(new MongoDataSource());
+    }
 
     public void run() {
-        BetRepository betRepo = new BetRepository(new MongoDataSource());
-        List<Bet> bets = betRepo.findAll().stream()
+        List<Bet> bets = betRepository.findAll().stream()
                 .filter(bet -> bet.getStatus() == BetStatus.SETTLED)
-                .filter(bet-> BetUtil.edgeIsGreaterThanOrEqualTo(bet.getEdge(), BigDecimal.valueOf(0.011)))
-                .filter(bet -> ChronoUnit.MINUTES.between(bet.getCreated(), bet.getStartTime()) > 120)
-                .filter(bet -> ChronoUnit.MINUTES.between(bet.getCreated(), bet.getStartTime()) < 240)
+                .filter(bet -> bet.getTrueClosingOdds() != null)
+//                .filter(bet -> BetUtil.edgeIsGreaterThanOrEqualTo(bet.getEdge(), BigDecimal.valueOf(0.011)))
+//                .filter(bet -> ChronoUnit.MINUTES.between(bet.getCreated(), bet.getStartTime()) > 120)
+//                .filter(bet -> ChronoUnit.MINUTES.between(bet.getCreated(), bet.getStartTime()) < 240)
                 .collect(Collectors.toList());
+        
+        BigDecimal expectedProfit = bets.stream()
+                .map(bet -> BetUtil.expectedProfit(bet))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
         BigDecimal profit = bets.stream()
                 .map(Bet::getPnl)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-        
-       LOG.info("Number of bets: {}, profit: {}", bets.size(), profit);
+
+        LOG.info("Number of bets: {}, profit: {}, expected profit: {}", bets.size(), profit, expectedProfit);
 
     }
 

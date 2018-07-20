@@ -31,12 +31,29 @@ public class Analytics {
     }
 
     public void run() {
-        List<Bet> bets = betRepository.findAll().stream()
+       printReport();
+
+    }
+    
+    private void printReport() {
+          List<Bet> bets = betRepository.findAll().stream()
+                .filter(bet -> bet.getStatus() == BetStatus.SETTLED)
+                .filter(bet -> BetUtil.edgeIsLessThanOrEqualTo(bet.getEdge(), BigDecimal.valueOf(0.011)))
+                //.filter(bet -> ChronoUnit.MINUTES.between(bet.getCreated(), bet.getStartTime()) > 120)
+                .filter(bet -> ChronoUnit.MINUTES.between(bet.getCreated(), bet.getStartTime()) < 120)
+                .collect(Collectors.toList());
+
+        BigDecimal profit = bets.stream()
+                .map(Bet::getPnl)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        LOG.info("Number of bets: {}, profit: {}", bets.size(), profit);
+    }
+    
+    private void printReportWithExpectedProfit() {
+                List<Bet> bets = betRepository.findAll().stream()
                 .filter(bet -> bet.getStatus() == BetStatus.SETTLED)
                 .filter(bet -> bet.getTrueClosingOdds() != null)
-//                .filter(bet -> BetUtil.edgeIsGreaterThanOrEqualTo(bet.getEdge(), BigDecimal.valueOf(0.011)))
-//                .filter(bet -> ChronoUnit.MINUTES.between(bet.getCreated(), bet.getStartTime()) > 120)
-//                .filter(bet -> ChronoUnit.MINUTES.between(bet.getCreated(), bet.getStartTime()) < 240)
                 .collect(Collectors.toList());
         
         BigDecimal expectedProfit = bets.stream()
@@ -48,7 +65,6 @@ public class Analytics {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         LOG.info("Number of bets: {}, profit: {}, expected profit: {}", bets.size(), profit, expectedProfit);
-
     }
 
     public static void main(String[] args) {

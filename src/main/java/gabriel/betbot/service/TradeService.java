@@ -48,7 +48,7 @@ public class TradeService {
     public static final long CLOSE_TO_START_HOURS = 2;
     public static final long NORMAL_HOURS = 7;
     public static final long EARLY_HOURS = 10;
-    private static final BigDecimal MIN_EDGE_CLOSE_TO_START = BigDecimal.valueOf(0.011);
+    private static final BigDecimal MIN_EDGE_CLOSE_TO_START = BigDecimal.valueOf(0.01);
     private static final BigDecimal MIN_EDGE_NORMAL = BigDecimal.valueOf(0.05);
     private static final BigDecimal MIN_EDGE_EARLY = BigDecimal.valueOf(0.05);
     private static final BigDecimal MAX_ODDS_CLOSE_TO_START = BigDecimal.valueOf(3);
@@ -113,6 +113,7 @@ public class TradeService {
                 .map(this::addEdges)
                 .map(trade -> tradeToBets(trade))
                 .flatMap(Collection::stream)
+                .filter(asianOddsHasTwoPossibleOutcomes())
                 .map(bet -> addClosingOddsToExistingBet(bet))
                 .filter(hasPositiveEdge())
                 .collect(toList());
@@ -253,6 +254,10 @@ public class TradeService {
     static BigDecimal calculateEdge(final BigDecimal offeredOdds, final BigDecimal trueOdds) {
         BigDecimal edge = offeredOdds.divide(trueOdds, NUM_DECIMALS_CALCULATON, BigDecimal.ROUND_HALF_UP).subtract(BigDecimal.ONE);
         return edge.setScale(NUM_DECIMALS_EDGE, BigDecimal.ROUND_HALF_UP);
+    }
+    
+    private static Predicate<Bet> asianOddsHasTwoPossibleOutcomes() {
+        return bet -> Strings.isNullOrEmpty(bet.getBetDescription()) || bet.getBetDescription().endsWith(".5");
     }
 
     private static Predicate<Bet> hasPositiveEdge() {

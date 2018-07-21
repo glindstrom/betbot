@@ -29,6 +29,7 @@ import gabriel.betbot.utils.JsonMapper;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -75,7 +76,7 @@ public class AsianOddsClient {
     private long footballSince;
     private long basketballSince;
     private int currentCredit;
-    
+
     private Set<Long> matchIdWithBets;
 
     @Inject
@@ -115,7 +116,7 @@ public class AsianOddsClient {
         CloseableHttpResponse response = client.doGet(ACCOUNT_SUMMARY_URL, headers);
         return JsonMapper.jsonToObject(response, AccountSummaryDto.class);
     }
-    
+
     public BetHistorySummaryDto getBetHistorySummaryDto(final LocalDate date) {
         loginIfNeeded();
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("MM/dd/yyyy");
@@ -123,17 +124,17 @@ public class AsianOddsClient {
         String url = BET_HISTORY_SUMMARY_URL + "?date=" + yesterDayAsString;
         return JsonMapper.jsonToObject(doGet(url), BetHistorySummaryDto.class);
     }
-    
+
     private void loginIfNeeded() {
         if (tokenHeader == null) {
             this.loginAndRegister();
         }
     }
-    
+
     private CloseableHttpResponse doGet(final String url) {
         List<Header> headers = ImmutableList.of(tokenHeader);
         return client.doGet(url, headers);
-    } 
+    }
 
     public Bet placeBet(final Bet bet) {
         if (hasBetOnMatch(bet)) {
@@ -150,7 +151,7 @@ public class AsianOddsClient {
         LOG.info(bet);
         LOG.info(betPlacementDto);
         if (betPlacementDto.code < 0 || !hasPlacementData(betPlacementDto) && !betPlacementDto.result.placementData.get(0).placedSuccessfully) {
-           // LOG.info("Placing bet {} failed, bet placement dto: {}", bet, betPlacementDto);
+            // LOG.info("Placing bet {} failed, bet placement dto: {}", bet, betPlacementDto);
 
             return new Bet.Builder(bet)
                     .withStatus(BetStatus.FAIL)
@@ -164,17 +165,17 @@ public class AsianOddsClient {
                 .withBookie(getBookie(betPlacementDto))
                 .build();
     }
-    
+
     private Bet cancelBet(final Bet bet) {
         return new Bet.Builder(bet)
-                   .withStatus(BetStatus.CANCELLED)
-                    .build();
+                .withStatus(BetStatus.CANCELLED)
+                .build();
     }
-    
+
     private boolean hasBetOnMatch(final Bet bet) {
         return this.matchIdWithBets.contains(bet.getMatchId());
     }
-    
+
     private boolean creditCoversBetAmount(final int amount) {
         if (this.currentCredit == Integer.MIN_VALUE) {
             this.currentCredit = this.getBankroll().getCredit().toBigInteger().intValueExact();
@@ -226,7 +227,7 @@ public class AsianOddsClient {
         CloseableHttpResponse response = client.doPost(PLACE_BET_URL, ImmutableList.of(tokenHeader), JsonMapper.objectToString(pbr));
         return JsonMapper.jsonToObject(response, BetPlacementDto.class);
     }
-    
+
     public void resetCurrentCredit() {
         this.currentCredit = Integer.MIN_VALUE;
     }
@@ -239,6 +240,7 @@ public class AsianOddsClient {
                     .withStatus(BetStatus.FAIL)
                     .build();
         }
+        LOG.info("Placement info: {}", placementInfoDto);
         List<OddsPlacementDatum> data = placementInfoDto.result.oddsPlacementData.stream()
                 .filter(opd -> opd.rejected == false)
                 .collect(Collectors.toList());
@@ -303,11 +305,17 @@ public class AsianOddsClient {
             return ImmutableList.of();
         }
         this.footballSince = footballTradeFeedDto.result != null ? footballTradeFeedDto.result.since : this.footballSince;
-        JsonMapper.writeObjectToFile(footballTradeFeedDto, "/home/gabriel/Documents/Repos/betbot/ResponseData/football.json");
+        if (footballTradeFeedDto.result != null && !footballTradeFeedDto.result.sports.isEmpty() && !footballTradeFeedDto.result.sports.get(0).matchGames.isEmpty()) {
+            String savePath = "/home/gabriel/Documents/Repos/betbot/ResponseData/football";
+            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("ddMMyyyyHHmm");
+            savePath += dtf.format(LocalDateTime.now());
+            savePath += ".json";
+            JsonMapper.writeObjectToFile(footballTradeFeedDto, savePath);
+        }
 
         return ImmutableList.copyOf(tradeFeedDtoToTrades(footballTradeFeedDto));
     }
-    
+
     private boolean isTradeFeedResponseOk(final TradeFeedDto dto) {
         if (dto.code < 0) {
             LOG.warn("Trade feed fetch returned error, dto: {}", dto);
@@ -324,7 +332,13 @@ public class AsianOddsClient {
             return ImmutableList.of();
         }
         this.basketballSince = basketTradeFeedDto.result != null ? basketTradeFeedDto.result.since : this.basketballSince;
-        JsonMapper.writeObjectToFile(basketTradeFeedDto, "/home/gabriel/Documents/Repos/betbot/ResponseData/basket.json");
+        if (basketTradeFeedDto.result != null && !basketTradeFeedDto.result.sports.isEmpty() && !basketTradeFeedDto.result.sports.get(0).matchGames.isEmpty()) {
+            String savePath = "/home/gabriel/Documents/Repos/betbot/ResponseData/basket";
+            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("ddMMyyyyHHmm");
+            savePath += dtf.format(LocalDateTime.now());
+            savePath += ".json";
+            JsonMapper.writeObjectToFile(basketTradeFeedDto, savePath);
+        }
 
         return ImmutableList.copyOf(tradeFeedDtoToTrades(basketTradeFeedDto));
     }
@@ -452,7 +466,7 @@ public class AsianOddsClient {
         }
         return ImmutableMap.copyOf(bookieOddsMap);
     }
-    
+
     public void clearMatchIdCache() {
         this.matchIdWithBets = new HashSet();
     }
@@ -508,7 +522,7 @@ public class AsianOddsClient {
         }
         return JsonMapper.jsonToObject(response, TradeFeedDto.class);
     }
-    
+
     private boolean responseOk(final CloseableHttpResponse response) {
         if (response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
             LOG.error("Error fetching trades: {}", response.getStatusLine());

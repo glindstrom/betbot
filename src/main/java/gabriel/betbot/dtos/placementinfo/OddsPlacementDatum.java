@@ -127,4 +127,9 @@ public class OddsPlacementDatum {
         this.sportsType = sportsType;
     }
 
+    @Override
+    public String toString() {
+        return "OddsPlacementDatum{" + "awayName=" + awayName + ", awayScore=" + awayScore + ", bookie=" + bookie + ", currency=" + currency + ", gameType=" + gameType + ", hDPorGoal=" + hDPorGoal + ", homeName=" + homeName + ", homeOrAwayOrDraw=" + homeOrAwayOrDraw + ", homeScore=" + homeScore + ", isFullTime=" + isFullTime + ", leagueName=" + leagueName + ", marketTypeId=" + marketTypeId + ", maximumAmount=" + maximumAmount + ", message=" + message + ", minimumAmount=" + minimumAmount + ", oddPlacementId=" + oddPlacementId + ", oddsFormat=" + oddsFormat + ", price=" + price + ", rejected=" + rejected + ", sportsType=" + sportsType + '}';
+    }
+
 }

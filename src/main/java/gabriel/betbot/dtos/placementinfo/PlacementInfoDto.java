@@ -36,4 +36,9 @@ public class PlacementInfoDto {
         this.result = result;
     }
 
+    @Override
+    public String toString() {
+        return "PlacementInfoDto{" + "code=" + code + ", result=" + result + '}';
+    }
+
 }

@@ -32,4 +32,9 @@ public class Result {
         this.oddsPlacementData = oddsPlacementData;
     }
 
+    @Override
+    public String toString() {
+        return "Result{" + "oddsPlacementData=" + oddsPlacementData + '}';
+    }
+
 }

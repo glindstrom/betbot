@@ -105,5 +105,10 @@ public class PlacementInfoRequest {
             return new PlacementInfoRequest(this);
         }
 
+        @Override
+        public String toString() {
+            return "Builder{" + "marketTypeId=" + marketTypeId + ", bookies=" + bookies + ", isFullTime=" + isFullTime + ", gameId=" + gameId + ", gameType=" + gameType + ", oddsName=" + oddsName + ", oddsFormat=" + oddsFormat + ", timeout=" + timeout + '}';
+        }
+
     }
 }

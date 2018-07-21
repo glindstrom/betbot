@@ -257,7 +257,7 @@ public class TradeService {
     }
     
     private static Predicate<Bet> asianOddsHasTwoPossibleOutcomes() {
-        return bet -> Strings.isNullOrEmpty(bet.getBetDescription()) || bet.getBetDescription().endsWith(".5");
+        return bet -> Strings.isNullOrEmpty(bet.getBetDescription()) || (bet.getBetDescription().endsWith(".5") && !bet.getBetDescription().contains("-"));
     }
 
     private static Predicate<Bet> hasPositiveEdge() {

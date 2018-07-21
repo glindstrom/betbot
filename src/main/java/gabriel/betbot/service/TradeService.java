@@ -262,9 +262,9 @@ public class TradeService {
 
     private static Predicate<Bet> hasPositiveEdge() {
         return bet -> {
-            return hasEdgeCloseToStart(bet)
-                    || hasNormalEdge(bet)
-                    || hasEarlyEdge(bet);
+            return hasEdgeCloseToStart(bet);
+//                    || hasNormalEdge(bet)
+//                    || hasEarlyEdge(bet);
         };
     }
 
@@ -344,6 +344,7 @@ public class TradeService {
                 .withSportsType(trade.getSportsType())
                 .withFavoured(trade.getFavoured())
                 .withMarketType(MarketType.getById(trade.getMarketTypeId()))
+                .withLeagueName(trade.getLeagueName())
                 .build();
 
     }

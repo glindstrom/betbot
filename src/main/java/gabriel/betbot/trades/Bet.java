@@ -51,6 +51,7 @@ public class Bet {
     private final BigDecimal actualStake;
     private final BigDecimal pnl;
     private final String betPlacementMessage;
+    private final String leagueName;
 
     @JsonCreator
     private Bet(
@@ -85,6 +86,7 @@ public class Bet {
             @JsonProperty("actualStake") final BigDecimal actualStake,
             @JsonProperty("pnl") final BigDecimal pnl,
             @JsonProperty("betPlacementMessage") final String betPlacementMessage,
+            @JsonProperty("leagueName") final String leagueName,
             @JsonProperty("status") final BetStatus status) {
         this.id = id;
         this.odds = odds;
@@ -117,6 +119,7 @@ public class Bet {
         this.pnlStatus = pnlStatus;
         this.actualStake = actualStake;
         this.pnl = pnl;
+        this.leagueName = leagueName;
         this.betPlacementMessage = betPlacementMessage;
     }
 
@@ -152,6 +155,7 @@ public class Bet {
         this.pnlStatus = builder.pnlStatus;
         this.actualStake = builder.actualStake;
         this.pnl = builder.pnl;
+        this.leagueName = builder.leagueName;
         this.betPlacementMessage = builder.betPlacementMessage;
     }
 
@@ -279,6 +283,10 @@ public class Bet {
         return trueClosingOdds;
     }
 
+    public String getLeagueName() {
+        return leagueName;
+    }
+
     @Override
     public String toString() {
         return "Bet{" + "id=" + id + ", odds=" + odds + ", trueOdds=" + trueOdds + ", pinnacleOdds=" + pinnacleOdds + ", bookies=" + bookies + ", oddsType=" + oddsType + ", oddsName=" + oddsName + ", edge=" + edge + ", isFullTime=" + isFullTime + ", homeTeamName=" + homeTeamName + ", awayTeamName=" + awayTeamName + ", betDescription=" + betDescription + ", startTime=" + startTime + ", gameId=" + gameId + ", matchId=" + matchId + ", sportsType=" + sportsType + ", optimalAmount=" + optimalAmount + ", amount=" + amount + ", minimumAmount=" + minimumAmount + ", maximumAmount=" + maximumAmount + ", status=" + status + ", created=" + created + ", bookie=" + bookie + ", betPlacementReference=" + betPlacementReference + ", marketType=" + marketType + ", favoured=" + favoured + ", pnlStatus=" + pnlStatus + ", actualStake=" + actualStake + ", pnl=" + pnl + ", betPlacementMessage=" + betPlacementMessage + '}';
@@ -319,6 +327,7 @@ public class Bet {
         private BigDecimal pnl;
         private BigDecimal actualStake;
         private String betPlacementMessage;
+        private String leagueName;
 
         public Builder(final Bet source) {
             this.id = source.id;
@@ -353,6 +362,7 @@ public class Bet {
             this.pnl = source.pnl;
             this.actualStake  = source.actualStake;
             this.betPlacementMessage = source.betPlacementMessage;
+            this.leagueName = source.leagueName;
         }
 
         public Builder() {
@@ -516,6 +526,11 @@ public class Bet {
         }
         public Builder withBetPlacementMessage(final String betPlacementMessage) {
             this.betPlacementMessage = betPlacementMessage;
+            return this;
+        }
+        
+        public Builder withLeagueName(final String leagueName) {
+            this.leagueName = leagueName;
             return this;
         }
         

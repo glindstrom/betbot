@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.util.ISO8601DateFormat;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.io.File;
 import java.io.IOException;
-import java.util.logging.Level;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.util.EntityUtils;
 import org.apache.logging.log4j.LogManager;
@@ -23,10 +22,19 @@ public class JsonMapper {
 
     public static <T> T jsonToObject(final CloseableHttpResponse response,
             final Class<T> classType) {
-        ObjectMapper objectMapper = getObjectMapper();
         String json = "";
         try {
             json = EntityUtils.toString(response.getEntity());
+            return jsonToObject(json, classType);
+        } catch (IOException ex) {
+            LOG.error("Error converting string {} to json", json);
+            throw new RuntimeException(ex);
+        }
+    }
+
+    public static <T> T jsonToObject(final String json, final Class<T> classType) {
+        ObjectMapper objectMapper = getObjectMapper();
+        try {
             return objectMapper.readValue(json, classType);
         } catch (IOException ex) {
             LOG.error("Error converting string {} to json", json);

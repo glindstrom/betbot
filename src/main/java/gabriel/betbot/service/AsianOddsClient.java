@@ -25,6 +25,7 @@ import gabriel.betbot.trades.Team;
 import gabriel.betbot.trades.Trade;
 import gabriel.betbot.utils.Client;
 import gabriel.betbot.utils.DateUtil;
+import gabriel.betbot.utils.FileUtil;
 import gabriel.betbot.utils.JsonMapper;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -38,11 +39,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Named;
 import org.apache.http.Header;
 import org.apache.http.HttpStatus;
+import org.apache.http.ParseException;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.util.EntityUtils;
@@ -304,13 +308,6 @@ public class AsianOddsClient {
             return ImmutableList.of();
         }
         this.footballSince = footballTradeFeedDto.result != null ? footballTradeFeedDto.result.since : this.footballSince;
-        if (footballTradeFeedDto.result != null && !footballTradeFeedDto.result.sports.isEmpty() && !footballTradeFeedDto.result.sports.get(0).matchGames.isEmpty()) {
-            String savePath = "/home/gabriel/Documents/Repos/betbot/ResponseData/football";
-            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("ddMMyyyyHHmm");
-            savePath += dtf.format(LocalDateTime.now());
-            savePath += ".json";
-            JsonMapper.writeObjectToFile(footballTradeFeedDto, savePath);
-        }
 
         return ImmutableList.copyOf(tradeFeedDtoToTrades(footballTradeFeedDto));
     }
@@ -331,13 +328,6 @@ public class AsianOddsClient {
             return ImmutableList.of();
         }
         this.basketballSince = basketTradeFeedDto.result != null ? basketTradeFeedDto.result.since : this.basketballSince;
-        if (basketTradeFeedDto.result != null && !basketTradeFeedDto.result.sports.isEmpty() && !basketTradeFeedDto.result.sports.get(0).matchGames.isEmpty()) {
-            String savePath = "/home/gabriel/Documents/Repos/betbot/ResponseData/basket";
-            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("ddMMyyyyHHmm");
-            savePath += dtf.format(LocalDateTime.now());
-            savePath += ".json";
-            JsonMapper.writeObjectToFile(basketTradeFeedDto, savePath);
-        }
 
         return ImmutableList.copyOf(tradeFeedDtoToTrades(basketTradeFeedDto));
     }
@@ -379,7 +369,6 @@ public class AsianOddsClient {
                 .withBookmakerOdds(bookieOddsMap)
                 .withHandicap(handicap)
                 .withIsFullTime(isFullTime)
-                .withLeagueName(matchGame.leagueName)
                 .withFavoured(matchGame.favoured == 2 ? Team.AWAY_TEAM : Team.HOME_TEAM)
                 .build();
         trades.add(trade);
@@ -429,6 +418,7 @@ public class AsianOddsClient {
                 .withSportsType(intToSportsType(sportsType))
                 .withMarketTypeId(matchGame.marketTypeId)
                 .withStartTime(DateUtil.milliSecondsToLocalDateTime(matchGame.startTime))
+                .withLeagueName(matchGame.leagueName)
                 .withHomeTeamName(matchGame.homeTeam.name)
                 .withAwayTeamName(matchGame.awayTeam.name);
     }
@@ -520,7 +510,22 @@ public class AsianOddsClient {
         if (!responseOk(response)) {
             return null;
         }
-        return JsonMapper.jsonToObject(response, TradeFeedDto.class);
+        String responseBody = "";
+        try {
+            responseBody = EntityUtils.toString(response.getEntity());
+            String savePath = "/home/gabriel/Documents/Repos/betbot/ResponseData/" + sportsType;
+            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("ddMMyyyyHHmm");
+            savePath += dtf.format(LocalDateTime.now());
+            savePath += ".json";
+            FileUtil.writeStringToFile(responseBody, savePath);
+        } catch (IOException | ParseException ex) {
+           throw new RuntimeException(ex);
+        }
+        return JsonMapper.jsonToObject(responseBody, TradeFeedDto.class);
+    }
+    
+    private static void saveResponseToFile() {
+        
     }
 
     private boolean responseOk(final CloseableHttpResponse response) {

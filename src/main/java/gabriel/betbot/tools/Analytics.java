@@ -2,13 +2,9 @@ package gabriel.betbot.tools;
 
 import gabriel.betbot.db.MongoDataSource;
 import gabriel.betbot.repositories.BetRepository;
-import gabriel.betbot.service.AsianOddsClient;
-import gabriel.betbot.service.TradeService;
-import gabriel.betbot.trades.AsianOddsBetResultUpdater;
 import gabriel.betbot.trades.Bet;
 import gabriel.betbot.trades.BetStatus;
 import gabriel.betbot.utils.BetUtil;
-import gabriel.betbot.utils.Client;
 import java.math.BigDecimal;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -31,15 +27,15 @@ public class Analytics {
     }
 
     public void run() {
-       printReport();
+        printReportWithExpectedProfit();
 
     }
-    
+
     private void printReport() {
-          List<Bet> bets = betRepository.findAll().stream()
+        List<Bet> bets = betRepository.findAll().stream()
                 .filter(bet -> bet.getStatus() == BetStatus.SETTLED)
                 .filter(bet -> BetUtil.edgeIsLessThanOrEqualTo(bet.getEdge(), BigDecimal.valueOf(0.011)))
-                //.filter(bet -> ChronoUnit.MINUTES.between(bet.getCreated(), bet.getStartTime()) > 120)
+                .filter(bet -> ChronoUnit.MINUTES.between(bet.getCreated(), bet.getStartTime()) > 120)
                 .filter(bet -> ChronoUnit.MINUTES.between(bet.getCreated(), bet.getStartTime()) < 120)
                 .collect(Collectors.toList());
 
@@ -49,13 +45,21 @@ public class Analytics {
 
         LOG.info("Number of bets: {}, profit: {}", bets.size(), profit);
     }
-    
+
     private void printReportWithExpectedProfit() {
-                List<Bet> bets = betRepository.findAll().stream()
+        List<Bet> bets = betRepository.findAll().stream()
                 .filter(bet -> bet.getStatus() == BetStatus.SETTLED)
                 .filter(bet -> bet.getTrueClosingOdds() != null)
+              // .filter(bet -> BetUtil.edgeIsGreaterThanOrEqualTo(bet.getEdge(), BigDecimal.valueOf(0.05)))
+                //.filter(bet -> BetUtil.edgeIsLessThanOrEqualTo(bet.getEdge(), BigDecimal.valueOf(0.05)))
+                //.filter(bet -> ChronoUnit.MINUTES.between(bet.getCreated(), bet.getStartTime()) > 10)
+                //.filter(bet -> ChronoUnit.MINUTES.between(bet.getCreated(), bet.getStartTime()) < 120)
                 .collect(Collectors.toList());
         
+        bets.stream()
+                .sorted((b1, b2) -> BetUtil.expectedProfit(b1).compareTo(BetUtil.expectedProfit(b2)))
+                .forEach(bet -> LOG.info("Bet: {}, expected profit; {}", bet, BetUtil.expectedProfit(bet)));
+
         BigDecimal expectedProfit = bets.stream()
                 .map(bet -> BetUtil.expectedProfit(bet))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);

@@ -240,7 +240,6 @@ public class AsianOddsClient {
                     .withStatus(BetStatus.FAIL)
                     .build();
         }
-        LOG.info("Placement info: {}", placementInfoDto);
         List<OddsPlacementDatum> data = placementInfoDto.result.oddsPlacementData.stream()
                 .filter(opd -> opd.rejected == false)
                 .collect(Collectors.toList());
@@ -380,6 +379,7 @@ public class AsianOddsClient {
                 .withBookmakerOdds(bookieOddsMap)
                 .withHandicap(handicap)
                 .withIsFullTime(isFullTime)
+                .withLeagueName(matchGame.leagueName)
                 .withFavoured(matchGame.favoured == 2 ? Team.AWAY_TEAM : Team.HOME_TEAM)
                 .build();
         trades.add(trade);

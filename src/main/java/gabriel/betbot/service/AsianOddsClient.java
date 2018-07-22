@@ -39,8 +39,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -522,10 +520,6 @@ public class AsianOddsClient {
            throw new RuntimeException(ex);
         }
         return JsonMapper.jsonToObject(responseBody, TradeFeedDto.class);
-    }
-    
-    private static void saveResponseToFile() {
-        
     }
 
     private boolean responseOk(final CloseableHttpResponse response) {

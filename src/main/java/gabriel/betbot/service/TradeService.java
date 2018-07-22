@@ -3,6 +3,7 @@ package gabriel.betbot.service;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
 import gabriel.betbot.repositories.BetRepository;
+import gabriel.betbot.trades.AsianOddsBetResultUpdater;
 import gabriel.betbot.trades.Bet;
 import gabriel.betbot.trades.BetStatus;
 import gabriel.betbot.trades.MarketType;
@@ -60,14 +61,22 @@ public class TradeService {
     private final AsianOddsClient asianOddsClient;
     private final BetRepository betRepository;
     private final BankrollService bankrollService;
+    private AsianOddsBetResultUpdater updater;
+
+    private BigDecimal todayProfitNLoss;
+    private BigDecimal yesterDayProfitNLoss;
 
     @Inject
     public TradeService(final AsianOddsClient asianOddsClient,
             final BetRepository betRepository,
-            final BankrollService bankrollService) {
+            final BankrollService bankrollService,
+            final AsianOddsBetResultUpdater updater) {
         this.asianOddsClient = asianOddsClient;
         this.betRepository = betRepository;
         this.bankrollService = bankrollService;
+        this.updater = updater;
+        this.todayProfitNLoss = BigDecimal.ZERO;
+        this.yesterDayProfitNLoss = BigDecimal.ZERO;
     }
 
     public static void main(String[] args) {
@@ -96,9 +105,25 @@ public class TradeService {
     public void doBets() {
         doBets(asianOddsClient.getFootballTrades());
         doBets(asianOddsClient.getBasketballTrades());
+        LOG.info(bankrollService.bankrollToString());
+        updateResultsIfProfitHasChanged();
         asianOddsClient.clearMatchIdCache();
         bankrollService.clear();
         asianOddsClient.resetCurrentCredit();
+    }
+
+    private void updateResultsIfProfitHasChanged() {
+        if (bankrollHasChanged()) {
+            LOG.info("Updating results");
+            updater.updateResults(LocalDate.now());
+            this.todayProfitNLoss = bankrollService.getTodayPnL();
+            this.yesterDayProfitNLoss = bankrollService.getYesterdayPnL();
+        }
+    }
+
+    private boolean bankrollHasChanged() {
+        return (bankrollService.getTodayPnL().compareTo(this.todayProfitNLoss) != 0)
+                || (bankrollService.getYesterdayPnL().compareTo(this.yesterDayProfitNLoss) != 0);
     }
 
     private void doBets(final List<Trade> tradesList) {
@@ -134,8 +159,6 @@ public class TradeService {
                 .map(betRepository::saveAndGet)
                 .collect((Collectors.toList()));
         LOG.info("Number of bets: {}", placedBets.size());
-        LOG.info(BankrollService.bankrollToString(asianOddsClient.getBankroll()));
-        this.bankrollService.clear();
     }
 
     private Predicate<Bet> betOnGameDoesNotExist() {
@@ -152,8 +175,8 @@ public class TradeService {
                 .filter(b -> b.isIsFullTime() == bet.isIsFullTime()
                         && b.getOddsName() == bet.getOddsName()
                         && b.getOddsType() == bet.getOddsType()
-                        && ((b.getBetDescription() == null && bet.getBetDescription() == null) 
-                                || (b.getBetDescription().equals(bet.getBetDescription()))))
+                        && ((b.getBetDescription() == null && bet.getBetDescription() == null)
+                        || (b.getBetDescription().equals(bet.getBetDescription()))))
                 .findAny()
                 .orElse(null);
         if (placedBet != null) {
@@ -255,7 +278,7 @@ public class TradeService {
         BigDecimal edge = offeredOdds.divide(trueOdds, NUM_DECIMALS_CALCULATON, BigDecimal.ROUND_HALF_UP).subtract(BigDecimal.ONE);
         return edge.setScale(NUM_DECIMALS_EDGE, BigDecimal.ROUND_HALF_UP);
     }
-    
+
     private static Predicate<Bet> asianOddsHasTwoPossibleOutcomes() {
         return bet -> Strings.isNullOrEmpty(bet.getBetDescription()) || (bet.getBetDescription().endsWith(".5") && !bet.getBetDescription().contains("-"));
     }

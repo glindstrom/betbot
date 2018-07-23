@@ -13,16 +13,16 @@ import gabriel.betbot.trades.OddsType;
 import gabriel.betbot.trades.Trade;
 import static gabriel.betbot.utils.BetUtil.edgeIsGreaterThan;
 import static gabriel.betbot.utils.BetUtil.oddsAreLessThanOrEqualTo;
+import static gabriel.betbot.utils.BetUtil.calculateTrueOdds;
 import gabriel.betbot.utils.KellyCalculator;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -47,6 +47,7 @@ public class TradeService {
     private static final int NUM_DECIMALS_EDGE = 4;
     private static final int NUM_DECIMALS_CALCULATON = 10;
     public static final long CLOSE_TO_START_HOURS = 2;
+    public static final long CLOSE_TO_START_MINUTES = 30;
     public static final long NORMAL_HOURS = 7;
     public static final long EARLY_HOURS = 10;
     private static final BigDecimal MIN_EDGE_CLOSE_TO_START = BigDecimal.valueOf(0.01);
@@ -61,10 +62,11 @@ public class TradeService {
     private final AsianOddsClient asianOddsClient;
     private final BetRepository betRepository;
     private final BankrollService bankrollService;
-    private AsianOddsBetResultUpdater updater;
+    private final AsianOddsBetResultUpdater updater;
 
     private BigDecimal todayProfitNLoss;
     private BigDecimal yesterDayProfitNLoss;
+    private Map<Long, Odds> matchIdToTrue1X2Odds;
 
     @Inject
     public TradeService(final AsianOddsClient asianOddsClient,
@@ -79,41 +81,21 @@ public class TradeService {
         this.yesterDayProfitNLoss = BigDecimal.ZERO;
     }
 
-    public static void main(String[] args) {
-//        Client client = new Client();
-//        AsianOddsClient asianOddsClient = new AsianOddsClient(client);
-//        BankrollService bankrollService = new BankrollService(asianOddsClient);
-//        BetRepository betRepo = new BetRepository(new MongoDataSource());
-//        TradeService tradeService = new TradeService(asianOddsClient, betRepo, bankrollService);
-//        //tradeService.doBets();
-//
-//        try {
-//            while (true) {
-//                tradeService.doBets();
-//                Thread.sleep(2 * 60 * 1000);
-//            }
-//        } catch (InterruptedException e) {
-//            e.printStackTrace();
-//        }
-        LocalDate yesterday = LocalDate.now().minusDays(1);
-        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("MM/dd/yyyy");
-        String yesterDayAsString = dtf.format(yesterday);
-        System.out.println(yesterDayAsString);
-    }
-
     @Scheduled(fixedDelay = ONE_MINUTE_IN_MILLISECONDS)
     public void doBets() {
-        doBets(asianOddsClient.getFootballTrades());
-        doBets(asianOddsClient.getBasketballTrades());
+        matchIdToTrue1X2Odds = new HashMap();
+        int numPlacedFootBallBets = doBets(asianOddsClient.getFootballTrades());
+        int numPlacedBasketBets = doBets(asianOddsClient.getBasketballTrades());
+        LOG.info("Football bets placed: {}, basketball bets places: {}", numPlacedFootBallBets, numPlacedFootBallBets);
         LOG.info(bankrollService.bankrollToString());
-        updateResultsIfProfitHasChanged();
+        updateResults(numPlacedFootBallBets + numPlacedBasketBets);
         asianOddsClient.clearMatchIdCache();
         bankrollService.clear();
         asianOddsClient.resetCurrentCredit();
     }
 
-    private void updateResultsIfProfitHasChanged() {
-        if (bankrollHasChanged()) {
+    private void updateResults(int numberOfBetsPlaced) {
+        if (bankrollHasChanged() || numberOfBetsPlaced > 0) {
             LOG.info("Updating results");
             updater.updateResults(LocalDate.now());
             this.todayProfitNLoss = bankrollService.getTodayPnL();
@@ -126,7 +108,7 @@ public class TradeService {
                 || (bankrollService.getYesterdayPnL().compareTo(this.yesterDayProfitNLoss) != 0);
     }
 
-    private void doBets(final List<Trade> tradesList) {
+    private int doBets(final List<Trade> tradesList) {
         List<Trade> trades = tradesList.stream()
                 .filter(trade -> trade.getBookieOdds().containsKey(PINNACLE) && trade.getBookieOdds().keySet().size() > 1)
                 .collect(toList());
@@ -158,7 +140,8 @@ public class TradeService {
                 .map(asianOddsClient::placeBet)
                 .map(betRepository::saveAndGet)
                 .collect((Collectors.toList()));
-        LOG.info("Number of bets: {}", placedBets.size());
+        
+        return placedBets.size();
     }
 
     private Predicate<Bet> betOnGameDoesNotExist() {
@@ -223,6 +206,9 @@ public class TradeService {
     private Trade addTrueOdds(final Trade trade) {
         Odds edgeComparisonOdds = trade.getBookieOdds().get(PINNACLE);
         Odds trueOdds = calculateTrueOdds(edgeComparisonOdds);
+        if (trueOdds.getOddsType() == OddsType.ONE_X_TWO) {
+            matchIdToTrue1X2Odds.put(trade.getMatchId(), trueOdds);
+        }
         return new Trade.Builder(trade).withTrueOdds(trueOdds).build();
     }
 
@@ -233,28 +219,6 @@ public class TradeService {
         return new Trade.Builder(trade)
                 .withBookmakerOdds(bookieOdds)
                 .build();
-    }
-
-    static Odds calculateTrueOdds(final Odds odds) {
-        BigDecimal prob1 = BigDecimal.ONE.divide(odds.getOdds1(), NUM_DECIMALS_CALCULATON, BigDecimal.ROUND_HALF_UP);
-        BigDecimal prob2 = BigDecimal.ONE.divide(odds.getOdds2(), NUM_DECIMALS_CALCULATON, BigDecimal.ROUND_HALF_UP);
-        BigDecimal prob3 = odds.getOddsType() == OddsType.ONE_X_TWO ? BigDecimal.ONE.divide(odds.getOddsX(), NUM_DECIMALS_CALCULATON, BigDecimal.ROUND_HALF_UP) : BigDecimal.ZERO;
-        BigDecimal margin = prob1.add(prob2).add(prob3).subtract(BigDecimal.ONE);
-        BigDecimal weightFactor = odds.getOddsType() == OddsType.ONE_X_TWO ? BigDecimal.valueOf(3) : BigDecimal.valueOf(2);
-        BigDecimal trueOddsValue1 = calculateTrueOddsValue(margin, weightFactor, odds.getOdds1());
-        BigDecimal trueOddsValue2 = calculateTrueOddsValue(margin, weightFactor, odds.getOdds2());
-        Odds.Builder oddsBuilder = new Odds.Builder(odds).withOdds1(trueOddsValue1).withOdds2(trueOddsValue2);
-        if (odds.getOddsType() == OddsType.ONE_X_TWO) {
-            BigDecimal trueOddsValueX = calculateTrueOddsValue(margin, weightFactor, odds.getOddsX());
-            oddsBuilder = oddsBuilder.withDrawOdds(trueOddsValueX);
-        }
-        return oddsBuilder.build();
-    }
-
-    private static BigDecimal calculateTrueOddsValue(final BigDecimal margin, final BigDecimal weightFactor, final BigDecimal oddsValue) {
-        BigDecimal numerator = weightFactor.multiply(oddsValue);
-        BigDecimal denominator = weightFactor.subtract(margin.multiply(oddsValue));
-        return numerator.divide(denominator, NUM_DECIMALS_CALCULATON, RoundingMode.HALF_UP);
     }
 
     private Odds addEdge(final Odds odds, final Odds trueOdds) {
@@ -292,7 +256,7 @@ public class TradeService {
     }
 
     private static boolean hasEdgeCloseToStart(final Bet bet) {
-        if (!startsInLessThanNHours(bet.getStartTime(), CLOSE_TO_START_HOURS)) {
+        if (!startsInLessThanNMinutes(bet.getStartTime(), CLOSE_TO_START_MINUTES)) {
             return false;
         }
         return oddsAreLessThanOrEqualTo(bet.getOdds(), MAX_ODDS_CLOSE_TO_START)
@@ -318,6 +282,10 @@ public class TradeService {
     private static boolean startsInLessThanNHours(final LocalDateTime startTime, final long hours) {
         LocalDateTime now = LocalDateTime.now();
         return ChronoUnit.HOURS.between(now, startTime) < hours;
+    }
+    private static boolean startsInLessThanNMinutes(final LocalDateTime startTime, final long minutes) {
+        LocalDateTime now = LocalDateTime.now();
+        return ChronoUnit.MINUTES.between(now, startTime) < minutes;
     }
 
     private static List<Bet> tradeToBets(final Trade trade) {

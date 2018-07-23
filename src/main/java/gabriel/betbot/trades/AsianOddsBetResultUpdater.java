@@ -58,8 +58,7 @@ public class AsianOddsBetResultUpdater {
                     .filter(bs -> !EXCLUDES_STATUSES.contains(bs.status))
                     .map(this::updateBetsWithResult)
                     .filter(bet -> Objects.nonNull(bet))
-                    .map(betRepository::saveAndGet)
-                    .forEach(System.out::println);
+                    .forEach(betRepository::save);
                     
         }
     }
@@ -75,9 +74,9 @@ public class AsianOddsBetResultUpdater {
             return null;
         }
         BetStatus betStatus = STRING_TO_BET_STATUS.get(betSummary.status);
-//        if (bet.getStatus() == betStatus) {
-//            return bet;
-//        }
+        if (bet.getStatus() == betStatus) {
+            return null;
+        }
         Bet.Builder betBuilder = new Bet.Builder(bet)
                 .withStatus(betStatus)
                 .withBetPlacementMessage(betSummary.betPlacementMessage);
@@ -88,6 +87,7 @@ public class AsianOddsBetResultUpdater {
                     .withPnl(betSummary.pnl)
                     .withActualStake(betSummary.stake);
         }
+        LOG.info("Updating bet {}, result: {}", bet.getId(), betSummary.pnl);
         return betBuilder.build();
     }
 

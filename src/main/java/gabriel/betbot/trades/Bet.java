@@ -320,7 +320,6 @@ public class Bet {
         private BetStatus status;
         private String betPlacementReference;
         private String bookie;
-        private BigDecimal stake;
         private Team favoured;
         private MarketType marketType;
         private PnlStatus pnlStatus;
@@ -495,11 +494,6 @@ public class Bet {
 
         public Builder withBookie(final String bookie) {
             this.bookie = bookie;
-            return this;
-        }
-
-        public Builder withStake(final BigDecimal stake) {
-            this.stake = stake;
             return this;
         }
 

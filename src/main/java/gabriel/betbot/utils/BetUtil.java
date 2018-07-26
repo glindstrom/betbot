@@ -3,6 +3,7 @@ package gabriel.betbot.utils;
 import gabriel.betbot.trades.Bet;
 import gabriel.betbot.trades.Odds;
 import gabriel.betbot.trades.OddsType;
+import gabriel.betbot.trades.Team;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
@@ -31,11 +32,11 @@ public class BetUtil {
     }
 
     public static BigDecimal expectedProfit(final Bet bet) {
-        BigDecimal pWin =  BigDecimal.ONE.divide(bet.getTrueClosingOdds(), NUM_DECIMALS_CALCULATON, BigDecimal.ROUND_HALF_UP);
+        BigDecimal pWin = BigDecimal.ONE.divide(bet.getTrueClosingOdds(), NUM_DECIMALS_CALCULATON, BigDecimal.ROUND_HALF_UP);
         BigDecimal expectedReturn = bet.getOdds().multiply(pWin).subtract(BigDecimal.ONE);
         return expectedReturn.multiply(bet.getActualStake());
     }
-    
+
     public static Odds calculateTrueOdds(final Odds odds) {
         BigDecimal prob1 = BigDecimal.ONE.divide(odds.getOdds1(), NUM_DECIMALS_CALCULATON, BigDecimal.ROUND_HALF_UP);
         BigDecimal prob2 = BigDecimal.ONE.divide(odds.getOdds2(), NUM_DECIMALS_CALCULATON, BigDecimal.ROUND_HALF_UP);
@@ -56,5 +57,41 @@ public class BetUtil {
         BigDecimal numerator = weightFactor.multiply(oddsValue);
         BigDecimal denominator = weightFactor.subtract(margin.multiply(oddsValue));
         return numerator.divide(denominator, NUM_DECIMALS_CALCULATON, RoundingMode.HALF_UP);
+    }
+
+    public static Odds calcultateTrueDrawNoBetOdds(final Odds true1x2Odds) {
+        BigDecimal homeOdds = divide(true1x2Odds.getHomeOdds(), true1x2Odds.getAwayOdds()).add(BigDecimal.ONE);
+        BigDecimal awayOdds = divide(true1x2Odds.getAwayOdds(), true1x2Odds.getHomeOdds()).add(BigDecimal.ONE);
+
+        return new Odds.Builder()
+                .withHomeOdds(homeOdds)
+                .withAwayOdds(awayOdds)
+                .build();
+    }
+
+    private static BigDecimal divide(final BigDecimal dividend, final BigDecimal divisor) {
+        return dividend.divide(divisor, NUM_DECIMALS_CALCULATON, RoundingMode.HALF_UP);
+    }
+
+    public static Odds calculateQuarterHandicapTrueOdds(final Odds true1x2odds, final Team favouredTeam) {
+        BigDecimal homeOdds = favouredTeam == Team.HOME_TEAM ? calculateTrueQuarterHandicapAsianOddsForFavouredTeam(true1x2odds.getHomeOdds(), true1x2odds.getAwayOdds(), true1x2odds.getDrawOdds())
+                : calculateTrueQuarterHandicapAsianOddsForNonFavouredTeam(true1x2odds.getHomeOdds(), true1x2odds.getAwayOdds(), true1x2odds.getDrawOdds());
+        BigDecimal awayOdds = favouredTeam == Team.AWAY_TEAM ? calculateTrueQuarterHandicapAsianOddsForFavouredTeam(true1x2odds.getAwayOdds(), true1x2odds.getHomeOdds(), true1x2odds.getDrawOdds())
+                : calculateTrueQuarterHandicapAsianOddsForNonFavouredTeam(true1x2odds.getAwayOdds(), true1x2odds.getHomeOdds(), true1x2odds.getDrawOdds());
+
+        return new Odds.Builder()
+                .withHomeOdds(homeOdds)
+                .withAwayOdds(awayOdds)
+                .build();
+    }
+
+    private static BigDecimal calculateTrueQuarterHandicapAsianOddsForFavouredTeam(final BigDecimal oddsWin, final BigDecimal oddsLoss, final BigDecimal oddsDraw) {
+        return divide(oddsWin, oddsLoss).add(divide(oddsWin, oddsDraw.multiply(BigDecimal.valueOf(2)))).add(BigDecimal.ONE);
+    }
+
+    private static BigDecimal calculateTrueQuarterHandicapAsianOddsForNonFavouredTeam(final BigDecimal oddsWin, final BigDecimal oddsLoss, final BigDecimal oddsDraw) {
+        BigDecimal dividend = oddsWin.multiply(oddsDraw).multiply(BigDecimal.valueOf(2));
+        BigDecimal divisor = oddsLoss.multiply(oddsDraw.multiply(BigDecimal.valueOf(2)).add(oddsWin));
+        return divide(dividend, divisor).add(BigDecimal.ONE);
     }
 }

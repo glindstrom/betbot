@@ -11,6 +11,7 @@ import gabriel.betbot.trades.Odds;
 import gabriel.betbot.trades.OddsName;
 import gabriel.betbot.trades.OddsType;
 import gabriel.betbot.trades.Trade;
+import gabriel.betbot.utils.BetUtil;
 import static gabriel.betbot.utils.BetUtil.edgeIsGreaterThan;
 import static gabriel.betbot.utils.BetUtil.oddsAreLessThanOrEqualTo;
 import static gabriel.betbot.utils.BetUtil.calculateTrueOdds;
@@ -20,6 +21,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -42,22 +44,47 @@ import org.springframework.scheduling.annotation.Scheduled;
 @Named
 public class TradeService {
 
+    public static final List<String> MAIN_LEAGUES = Arrays.asList(
+            "SWITZERLAND SUPER LEAGUE",
+            "USA MAJOR LEAGUE SOCCER",
+            "MEXICO LIGA MX",
+            "JAPAN FOOTBALL LEAGUE",
+            "DENMARK SUPER LEAGUE",
+            "CHINA SUPER LEAGUE",
+            "SWEDEN ALLSVENSKAN",
+            "SCOTLAND LEAGUE CUP",
+            "FINLAND VEIKKAUSLIIGA",
+            "BRAZIL SERIE A",
+            "POLAND EKSTRAKLASA",
+            "ENGLISH CHAMPIONSHIP",
+            "ENGLISH LEAGUE ONE",
+            "ENGLISH LEAGUE TWO",
+            "FRANCE LIGUE 1",
+            "FRANCE LIGUE 2",
+            "GERMANY BUNDESLIGA 2",
+            "HOLLAND EREDIVISIE",
+            "IRELAND PREMIER DIVISION",
+            "NORWAY ELITESERIEN",
+            "RUSSIA PREMIER LEAGUE"
+    );
+
     private static final Logger LOG = LogManager.getLogger(TradeService.class.getName());
     private static final String PINNACLE = "PIN";
     private static final int NUM_DECIMALS_EDGE = 4;
     private static final int NUM_DECIMALS_CALCULATON = 10;
-    public static final long CLOSE_TO_START_HOURS = 2;
     public static final long CLOSE_TO_START_MINUTES = 30;
-    public static final long NORMAL_HOURS = 7;
+    public static final long NORMAL_HOURS = 2;
     public static final long EARLY_HOURS = 10;
     private static final BigDecimal MIN_EDGE_CLOSE_TO_START = BigDecimal.valueOf(0.01);
-    private static final BigDecimal MIN_EDGE_NORMAL = BigDecimal.valueOf(0.05);
+    private static final BigDecimal MIN_EDGE_NORMAL = BigDecimal.valueOf(0.02);
     private static final BigDecimal MIN_EDGE_EARLY = BigDecimal.valueOf(0.05);
-    private static final BigDecimal MAX_ODDS_CLOSE_TO_START = BigDecimal.valueOf(3);
-    private static final BigDecimal MAX_ODDS_REGULAR = BigDecimal.valueOf(3);
+    private static final BigDecimal MAX_ODDS_CLOSE_TO_START = BigDecimal.valueOf(10);
+    private static final BigDecimal MAX_ODDS_REGULAR = BigDecimal.valueOf(10);
     private static final BigDecimal MAX_FRACTION = BigDecimal.valueOf(0.01);
-    private static final int ONE_MINUTE_IN_MILLISECONDS = 60 * 1000;
+    private static final int BET_FREQUENCY_IN_MILLISECONDS = 60 * 1000;
     private static final int MAX_CLOSING_ODDS_MINUTES = 5;
+    private static final String DRAW_NO_BET = "0.0";
+    private static final String QUARTER_HANDICAP = "0-0.5";
 
     private final AsianOddsClient asianOddsClient;
     private final BetRepository betRepository;
@@ -67,6 +94,7 @@ public class TradeService {
     private BigDecimal todayProfitNLoss;
     private BigDecimal yesterDayProfitNLoss;
     private Map<Long, Odds> matchIdToTrue1X2Odds;
+    private Map<Long, Odds> matchIdToTrue1X2OddsHalfTime;
 
     @Inject
     public TradeService(final AsianOddsClient asianOddsClient,
@@ -81,12 +109,13 @@ public class TradeService {
         this.yesterDayProfitNLoss = BigDecimal.ZERO;
     }
 
-    @Scheduled(fixedDelay = ONE_MINUTE_IN_MILLISECONDS)
+    @Scheduled(fixedDelay = BET_FREQUENCY_IN_MILLISECONDS)
     public void doBets() {
         matchIdToTrue1X2Odds = new HashMap();
+        matchIdToTrue1X2OddsHalfTime = new HashMap();
         int numPlacedFootBallBets = doBets(asianOddsClient.getFootballTrades());
         int numPlacedBasketBets = doBets(asianOddsClient.getBasketballTrades());
-        LOG.info("Football bets placed: {}, basketball bets places: {}", numPlacedFootBallBets, numPlacedFootBallBets);
+        LOG.info("Football bets placed: {}, basketball bets places: {}", numPlacedFootBallBets, numPlacedBasketBets);
         LOG.info(bankrollService.bankrollToString());
         updateResults(numPlacedFootBallBets + numPlacedBasketBets);
         asianOddsClient.clearMatchIdCache();
@@ -117,6 +146,8 @@ public class TradeService {
         }
         List<Bet> bets = trades.stream()
                 .map(this::addTrueOdds)
+                .map(this::addTrueDrawNoBetAndQuarterHandicapOdds)
+                .filter(bet -> bet.getTrueOdds() != null)
                 .map(this::addEdges)
                 .map(trade -> tradeToBets(trade))
                 .flatMap(Collection::stream)
@@ -140,8 +171,24 @@ public class TradeService {
                 .map(asianOddsClient::placeBet)
                 .map(betRepository::saveAndGet)
                 .collect((Collectors.toList()));
-        
+
         return placedBets.size();
+    }
+
+    private Trade addTrueDrawNoBetAndQuarterHandicapOdds(final Trade trade) {
+        if (!isDrawNoBetOrQuarterHandicap(trade.getHandicap())) {
+            return trade;
+        }
+        Odds true1x2Odds = trade.isIsFullTime() ? this.matchIdToTrue1X2Odds.get(trade.getMatchId()) : this.matchIdToTrue1X2OddsHalfTime.get(trade.getMatchId());
+        if (true1x2Odds == null) {
+            return trade;
+        }
+        Odds trueOdds = DRAW_NO_BET.equals(trade.getHandicap()) ? BetUtil.calcultateTrueDrawNoBetOdds(true1x2Odds) : BetUtil.calculateQuarterHandicapTrueOdds(true1x2Odds, trade.getFavoured());
+        return new Trade.Builder(trade).withTrueOdds(trueOdds).build();
+    }
+
+    private static boolean isDrawNoBetOrQuarterHandicap(final String handicap) {
+        return DRAW_NO_BET.equals(handicap) || QUARTER_HANDICAP.equals(handicap);
     }
 
     private Predicate<Bet> betOnGameDoesNotExist() {
@@ -204,10 +251,17 @@ public class TradeService {
     }
 
     private Trade addTrueOdds(final Trade trade) {
+        if (isDrawNoBetOrQuarterHandicap(trade.getHandicap())) {
+            return trade;
+        }
         Odds edgeComparisonOdds = trade.getBookieOdds().get(PINNACLE);
         Odds trueOdds = calculateTrueOdds(edgeComparisonOdds);
         if (trueOdds.getOddsType() == OddsType.ONE_X_TWO) {
-            matchIdToTrue1X2Odds.put(trade.getMatchId(), trueOdds);
+            if (trade.isIsFullTime()) {
+                matchIdToTrue1X2Odds.put(trade.getMatchId(), trueOdds);
+            } else {
+                matchIdToTrue1X2OddsHalfTime.put(trade.getMatchId(), trueOdds);
+            }
         }
         return new Trade.Builder(trade).withTrueOdds(trueOdds).build();
     }
@@ -244,13 +298,15 @@ public class TradeService {
     }
 
     private static Predicate<Bet> asianOddsHasTwoPossibleOutcomes() {
-        return bet -> Strings.isNullOrEmpty(bet.getBetDescription()) || (bet.getBetDescription().endsWith(".5") && !bet.getBetDescription().contains("-"));
+        return bet -> Strings.isNullOrEmpty(bet.getBetDescription())
+                || isDrawNoBetOrQuarterHandicap(bet.getBetDescription())
+                || (bet.getBetDescription().endsWith(".5") && !bet.getBetDescription().contains("-"));
     }
 
     private static Predicate<Bet> hasPositiveEdge() {
         return bet -> {
-            return hasEdgeCloseToStart(bet);
-//                    || hasNormalEdge(bet)
+            return hasEdgeCloseToStart(bet)
+                    || hasNormalEdge(bet);
 //                    || hasEarlyEdge(bet);
         };
     }
@@ -264,10 +320,7 @@ public class TradeService {
     }
 
     private static boolean hasNormalEdge(final Bet bet) {
-        if (!startsInLessThanNHours(bet.getStartTime(), NORMAL_HOURS)) {
-            return false;
-        }
-        return oddsAreLessThanOrEqualTo(bet.getOdds(), MAX_ODDS_REGULAR)
+        return MAIN_LEAGUES.contains(bet.getLeagueName()) && oddsAreLessThanOrEqualTo(bet.getOdds(), MAX_ODDS_REGULAR)
                 && edgeIsGreaterThan(bet.getEdge(), MIN_EDGE_NORMAL);
     }
 
@@ -283,6 +336,7 @@ public class TradeService {
         LocalDateTime now = LocalDateTime.now();
         return ChronoUnit.HOURS.between(now, startTime) < hours;
     }
+
     private static boolean startsInLessThanNMinutes(final LocalDateTime startTime, final long minutes) {
         LocalDateTime now = LocalDateTime.now();
         return ChronoUnit.MINUTES.between(now, startTime) < minutes;

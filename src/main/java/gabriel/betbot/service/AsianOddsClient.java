@@ -347,8 +347,11 @@ public class AsianOddsClient {
         List<Trade> trades = new ArrayList();
         matchGames.stream().forEach((matchGame) -> {
             addHdpTrade(matchGame, trades, true, sportsType);
+            addHdpTrade(matchGame, trades, false, sportsType);
             addOneXTwoTrade(matchGame, trades, true, sportsType);
+            addOneXTwoTrade(matchGame, trades, false, sportsType);
             addOuTrade(matchGame, trades, true, sportsType);
+            addOuTrade(matchGame, trades, false, sportsType);
         });
         return trades;
     }

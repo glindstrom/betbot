@@ -86,6 +86,7 @@ public class TradeService {
     private static final int MAX_CLOSING_ODDS_MINUTES = 5;
     private static final String DRAW_NO_BET = "0.0";
     private static final String QUARTER_HANDICAP = "0-0.5";
+    private static final int MINIMUM_MAXIMUM_AMOUNT = 1000;
 
     private final AsianOddsClient asianOddsClient;
     private final BetRepository betRepository;
@@ -167,6 +168,7 @@ public class TradeService {
                 .filter(betOnGameDoesNotExist())
                 .map(bet -> calculateAndAddRecommendedStake(bet))
                 .map(asianOddsClient::addPlacementInfo)
+                .filter(bet -> bet.getMaximumAmount() > MINIMUM_MAXIMUM_AMOUNT)
                 .map(bet -> setAmount(bet))
                 .sorted(Comparator.comparing(Bet::getEdge).reversed())
                 .filter(bet -> bet.getStatus() == BetStatus.OK)
@@ -322,7 +324,7 @@ public class TradeService {
     }
 
     private static boolean hasNormalEdge(final Bet bet) {
-        return MAIN_LEAGUES.contains(bet.getLeagueName()) && oddsAreLessThanOrEqualTo(bet.getOdds(), MAX_ODDS_REGULAR)
+        return oddsAreLessThanOrEqualTo(bet.getOdds(), MAX_ODDS_REGULAR)
                 && edgeIsGreaterThan(bet.getEdge(), MIN_EDGE_NORMAL);
     }
 

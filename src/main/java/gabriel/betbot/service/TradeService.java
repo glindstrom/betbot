@@ -16,6 +16,7 @@ import static gabriel.betbot.utils.BetUtil.edgeIsGreaterThan;
 import static gabriel.betbot.utils.BetUtil.oddsAreLessThanOrEqualTo;
 import static gabriel.betbot.utils.BetUtil.calculateTrueOdds;
 import gabriel.betbot.utils.KellyCalculator;
+import gabriel.betbot.utils.TradeUtil;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -145,6 +146,7 @@ public class TradeService {
             LOG.info("No potential trades found at this time");
         }
         List<Bet> bets = trades.stream()
+                .filter(noArbitrageOpportunityExists())
                 .map(this::addTrueOdds)
                 .map(this::addTrueDrawNoBetAndQuarterHandicapOdds)
                 .filter(bet -> bet.getTrueOdds() != null)
@@ -392,6 +394,10 @@ public class TradeService {
                 .withLeagueName(trade.getLeagueName())
                 .build();
 
+    }
+
+    private Predicate<Trade> noArbitrageOpportunityExists() {
+        return trade -> !TradeUtil.arbitrageOpportunityExists(trade);
     }
 
 }

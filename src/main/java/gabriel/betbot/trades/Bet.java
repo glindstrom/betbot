@@ -40,6 +40,7 @@ public class Bet {
     private final Integer amount;
     private final int minimumAmount;
     private final int maximumAmount;
+    private final int pinnacleMaximumAmount;
     private final BetStatus status;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd.MM.yyyy HH:mm")
     private final LocalDateTime created;
@@ -77,6 +78,7 @@ public class Bet {
             @JsonProperty("amount") final Integer amount,
             @JsonProperty("minimumAmount") final int minimumAmount,
             @JsonProperty("maximumAmount") final int maximumAmount,
+            @JsonProperty("pinnacleMaximumAmount") final int pinnacleMaximumAmount,
             @JsonProperty("created") final LocalDateTime created,
             @JsonProperty("betPlacementReference") final String betPlacementReference,
             @JsonProperty("bookie") final String bookie,
@@ -110,6 +112,7 @@ public class Bet {
         this.amount = amount;
         this.minimumAmount = minimumAmount;
         this.maximumAmount = maximumAmount;
+        this.pinnacleMaximumAmount = pinnacleMaximumAmount;
         this.created = created;
         this.betPlacementReference = betPlacementReference;
         this.bookie = bookie;
@@ -148,6 +151,7 @@ public class Bet {
         this.amount = builder.amount;
         this.minimumAmount = builder.minimumAmount;
         this.maximumAmount = builder.maximumAmount;
+        this.pinnacleMaximumAmount = builder.pinnacleMaximumAmount;
         this.bookie = builder.bookie;
         this.betPlacementReference = builder.betPlacementReference;
         this.favoured = builder.favoured;
@@ -247,6 +251,14 @@ public class Bet {
         return maximumAmount;
     }
 
+    public BigDecimal getClosingOdds() {
+        return closingOdds;
+    }
+
+    public int getPinnacleMaximumAmount() {
+        return pinnacleMaximumAmount;
+    }
+
     public String getBookie() {
         return bookie;
     }
@@ -316,6 +328,7 @@ public class Bet {
         private Integer amount;
         private int minimumAmount;
         private int maximumAmount;
+        private int pinnacleMaximumAmount;
         private LocalDateTime created;
         private BetStatus status;
         private String betPlacementReference;
@@ -351,6 +364,7 @@ public class Bet {
             this.amount = source.amount;
             this.minimumAmount = source.minimumAmount;
             this.maximumAmount = source.maximumAmount;
+            this.pinnacleMaximumAmount = source.pinnacleMaximumAmount;
             this.created = source.created;
             this.status = source.status;
             this.betPlacementReference = source.betPlacementReference;
@@ -474,6 +488,11 @@ public class Bet {
 
         public Builder withMaximumAmount(final int maximumAmount) {
             this.maximumAmount = maximumAmount;
+            return this;
+        }
+        
+        public Builder withPinnacleMaximumAmount(final int pinnacleMaximumAmount) {
+            this.pinnacleMaximumAmount = pinnacleMaximumAmount;
             return this;
         }
 

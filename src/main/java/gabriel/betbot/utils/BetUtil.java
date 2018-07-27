@@ -37,6 +37,10 @@ public class BetUtil {
         return expectedReturn.multiply(bet.getActualStake());
     }
 
+    public static BigDecimal closingEdge(final Bet bet) {
+        return MathUtil.divideXbyY(bet.getOdds(), bet.getTrueClosingOdds()).subtract(BigDecimal.ONE);
+    }
+
     public static Odds calculateTrueOdds(final Odds odds) {
         BigDecimal prob1 = BigDecimal.ONE.divide(odds.getOdds1(), NUM_DECIMALS_CALCULATON, BigDecimal.ROUND_HALF_UP);
         BigDecimal prob2 = BigDecimal.ONE.divide(odds.getOdds2(), NUM_DECIMALS_CALCULATON, BigDecimal.ROUND_HALF_UP);
@@ -51,6 +55,31 @@ public class BetUtil {
             oddsBuilder = oddsBuilder.withDrawOdds(trueOddsValueX);
         }
         return oddsBuilder.build();
+    }
+
+    public static BigDecimal unitProfit(final Bet bet) {
+        BigDecimal profit;
+        switch (bet.getPnlStatus()) {
+            case WON:
+                profit = bet.getOdds().subtract(BigDecimal.ONE);
+                break;
+            case HALF_WON:
+                profit = bet.getOdds().subtract(BigDecimal.ONE).multiply(BigDecimal.valueOf(0.5));
+                break;
+            case HALF_LOST:
+                profit = BigDecimal.valueOf(-0.5);
+                break;
+            case LOST:
+                profit = BigDecimal.valueOf(-1);
+                break;
+            case STAKE_RETURNED:
+                profit = BigDecimal.ZERO;
+                break;
+            default:
+                throw new IllegalStateException("PnL status is null or not implemented");
+        }
+        
+        return profit;
     }
 
     private static BigDecimal calculateTrueOddsValue(final BigDecimal margin, final BigDecimal weightFactor, final BigDecimal oddsValue) {

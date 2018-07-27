@@ -23,6 +23,7 @@ public class BetRepository {
     public BetRepository(final DataSource database) {
         bets = database.getDb().getCollection("bets");
         bets.ensureIndex("{matchId: 1}", "{unique: false, sparse: true}");
+        bets.ensureIndex("{gameId: 1}", "{unique: false, sparse: true}");
         bets.ensureIndex("{betPlacementReference: 1}", "{unique: true, sparse: true}");
     }
     
@@ -37,6 +38,10 @@ public class BetRepository {
     
     public List<Bet> findByMatchIdAndStatus(final long matchId, final BetStatus status) {
         return ImmutableList.copyOf(bets.find("{matchId: #, status: #}", matchId, status).as(Bet.class).iterator());
+    }
+    
+    public List<Bet> findByGameIdAndStatus(final long gameId, final BetStatus status) {
+        return ImmutableList.copyOf(bets.find("{gameId: #, status: #}", gameId, status).as(Bet.class).iterator());
     }
     
     public Bet findByBetPlacementReferece(final String betPlacementReference) {

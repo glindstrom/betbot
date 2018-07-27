@@ -7,7 +7,9 @@ import gabriel.betbot.dtos.bethistorysummary.BetSummary;
 import gabriel.betbot.repositories.BetRepository;
 import gabriel.betbot.service.AsianOddsClient;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Named;
 import org.apache.logging.log4j.LogManager;
@@ -19,7 +21,7 @@ import org.apache.logging.log4j.Logger;
  */
 @Named
 public class AsianOddsBetResultUpdater {
-    
+
     private static final Logger LOG = LogManager.getLogger(AsianOddsBetResultUpdater.class.getName());
     private static final ImmutableMap<String, BetStatus> STRING_TO_BET_STATUS = new ImmutableMap.Builder<String, BetStatus>()
             .put("8", BetStatus.REJECTED)
@@ -45,7 +47,7 @@ public class AsianOddsBetResultUpdater {
         this.asianOddsClient = asianOddsClient;
         this.betRepository = betRepository;
     }
-    
+
     public void updateResults() {
         LocalDate yesterday = LocalDate.now().minusDays(1);
         updateResults(yesterday);
@@ -54,12 +56,16 @@ public class AsianOddsBetResultUpdater {
     public void updateResults(final LocalDate date) {
         BetHistorySummaryDto dto = asianOddsClient.getBetHistorySummaryDto(date);
         if (hasSummary(dto)) {
-            dto.result.betSummaries.stream()
+            List<Bet> betsToUpdate = dto.result.betSummaries.stream()
                     .filter(bs -> !EXCLUDES_STATUSES.contains(bs.status))
                     .map(this::updateBetsWithResult)
                     .filter(bet -> Objects.nonNull(bet))
-                    .forEach(betRepository::save);
-                    
+                    .collect(Collectors.toList());
+            LOG.info("Updating {} bets", betsToUpdate.size());
+            betsToUpdate.stream()
+                    .map(betRepository::saveAndGet)
+                    .forEach(System.out::println);
+
         }
     }
 
@@ -80,7 +86,7 @@ public class AsianOddsBetResultUpdater {
         Bet.Builder betBuilder = new Bet.Builder(bet)
                 .withStatus(betStatus)
                 .withBetPlacementMessage(betSummary.betPlacementMessage);
-        
+
         if (betStatus == BetStatus.SETTLED) {
             betBuilder = betBuilder
                     .withPnlStatus(STRING_TO_PNL_STATUS.get(betSummary.pnlInfo))

@@ -240,29 +240,46 @@ public class AsianOddsClient {
     public Bet addPlacementInfo(final Bet bet) {
         PlacementInfoRequest pir = placementInfoRequestFromBet(bet);
         PlacementInfoDto placementInfoDto = getPlacementInfo(pir);
-        if (placementInfoDto.code < 0) {
+        PlacementInfoRequest pinnaclePir = createPinnaclePlacementInfoRequest(pir);
+        PlacementInfoDto pinnaclePlacementInfoDto = getPlacementInfo(pinnaclePir);
+        if (placementInfoDto.code < 0 || pinnaclePlacementInfoDto.code < 0) {
             return new Bet.Builder(bet)
                     .withStatus(BetStatus.FAIL)
                     .build();
         }
-        List<OddsPlacementDatum> data = placementInfoDto.result.oddsPlacementData.stream()
-                .filter(opd -> opd.rejected == false)
-                .collect(Collectors.toList());
-        if (data.isEmpty()) {
+        if (shouldRejectBet(placementInfoDto) || shouldRejectBet(pinnaclePlacementInfoDto)) {
             return new Bet.Builder(bet)
                     .withStatus(BetStatus.REJECTED)
                     .build();
         }
+
+        List<OddsPlacementDatum> data = placementInfoDto.result.oddsPlacementData;
         int minAmount = data.stream()
                 .map(d -> d.minimumAmount)
                 .min(Comparator.comparing(Integer::valueOf)).get();
         int maxAmount = data.stream()
                 .map(d -> d.maximumAmount)
                 .max(Comparator.comparing(Integer::valueOf)).get();
+        int pinnacleMaxAmount = pinnaclePlacementInfoDto.result.oddsPlacementData.stream()
+                .map(d -> d.maximumAmount)
+                .max(Comparator.comparing(Integer::valueOf)).get();
+
         return new Bet.Builder(bet)
                 .withStatus(BetStatus.OK)
                 .withMinimumAmount(minAmount)
                 .withMaximumAmount(maxAmount)
+                .withPinnacleMaximumAmount(pinnacleMaxAmount)
+                .build();
+    }
+
+    private static boolean shouldRejectBet(final PlacementInfoDto dto) {
+        return dto.result.oddsPlacementData.stream()
+                .anyMatch(opd -> opd.rejected == true);
+    }
+
+    private static PlacementInfoRequest createPinnaclePlacementInfoRequest(final PlacementInfoRequest pir) {
+        return new PlacementInfoRequest.Builder(pir)
+                .withBookies("PIN")
                 .build();
     }
 

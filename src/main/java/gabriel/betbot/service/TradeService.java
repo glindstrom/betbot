@@ -73,7 +73,7 @@ public class TradeService {
     private static final String PINNACLE = "PIN";
     private static final int NUM_DECIMALS_EDGE = 4;
     private static final int NUM_DECIMALS_CALCULATON = 10;
-    public static final long CLOSE_TO_START_MINUTES = 30;
+    public static final long CLOSE_TO_START_MINUTES = 120;
     public static final long NORMAL_HOURS = 2;
     public static final long EARLY_HOURS = 10;
     private static final BigDecimal MIN_EDGE_CLOSE_TO_START = BigDecimal.valueOf(0.01);
@@ -115,10 +115,10 @@ public class TradeService {
     public void doBets() {
         matchIdToTrue1X2Odds = new HashMap();
         matchIdToTrue1X2OddsHalfTime = new HashMap();
-        int numPlacedFootBallBets = doBets(asianOddsClient.getFootballTrades(MarketType.TODAY))
-                + doBets(asianOddsClient.getFootballTrades(MarketType.EARLY));
-        int numPlacedBasketBets = doBets(asianOddsClient.getBasketballTrades(MarketType.TODAY))
-                + doBets(asianOddsClient.getBasketballTrades(MarketType.EARLY));
+        int numPlacedFootBallBets = doBets(asianOddsClient.getFootballTrades(MarketType.TODAY));
+               // + doBets(asianOddsClient.getFootballTrades(MarketType.EARLY));
+        int numPlacedBasketBets = doBets(asianOddsClient.getBasketballTrades(MarketType.TODAY));
+              //  + doBets(asianOddsClient.getBasketballTrades(MarketType.EARLY));
         LOG.info("Football bets placed: {}, basketball bets places: {}", numPlacedFootBallBets, numPlacedBasketBets);
         LOG.info(bankrollService.bankrollToString());
         updateResults(numPlacedFootBallBets + numPlacedBasketBets);
@@ -170,7 +170,7 @@ public class TradeService {
                 .filter(betOnGameDoesNotExist())
                 .map(bet -> calculateAndAddRecommendedStake(bet))
                 .map(asianOddsClient::addPlacementInfo)
-                .filter(bet -> bet.getMaximumAmount() > MINIMUM_MAXIMUM_AMOUNT)
+                .filter(bet -> bet.getPinnacleMaximumAmount() >= MINIMUM_MAXIMUM_AMOUNT)
                 .map(bet -> setAmount(bet))
                 .sorted(Comparator.comparing(Bet::getEdge).reversed())
                 .filter(bet -> bet.getStatus() == BetStatus.OK)
@@ -209,7 +209,7 @@ public class TradeService {
         if (bet.getStartTime().isBefore(now)) {
             return bet;
         }
-        List<Bet> placedBets = betRepository.findByMatchIdAndStatus(bet.getMatchId(), BetStatus.SUCCESS);
+        List<Bet> placedBets = betRepository.findByGameIdAndStatus(bet.getGameId(), BetStatus.SUCCESS);
         Bet placedBet = placedBets.stream()
                 .filter(b -> b.isIsFullTime() == bet.isIsFullTime()
                         && b.getOddsName() == bet.getOddsName()

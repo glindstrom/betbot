@@ -74,7 +74,7 @@ public class PlaceBetRequest {
         public String placeBetId;
         public Integer acceptChangeOdds;
         public Integer sportsType;
-
+        
         public Builder withMarketTypeId(final Integer marketTypeId) {
             this.marketTypeId = marketTypeId;
             return this;

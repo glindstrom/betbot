@@ -49,6 +49,11 @@ public class PlacementInfoRequest {
         this.timeout = builder.timeout;
     }
 
+    @Override
+    public String toString() {
+        return "PlacementInfoRequest{" + "marketTypeId=" + marketTypeId + ", bookies=" + bookies + ", isFullTime=" + isFullTime + ", gameId=" + gameId + ", gameType=" + gameType + ", oddsName=" + oddsName + ", oddsFormat=" + oddsFormat + ", timeout=" + timeout + '}';
+    }
+
     public static class Builder {
 
         public Integer marketTypeId;
@@ -59,7 +64,20 @@ public class PlacementInfoRequest {
         public String oddsName;
         public String oddsFormat;
         public Integer timeout;
+        
+        public Builder() {
+        }
 
+        public Builder(final PlacementInfoRequest source) {
+            this.marketTypeId  = source.marketTypeId;
+            this.bookies = source.bookies;
+            this.isFullTime = source.isFullTime;
+            this.gameId = source.gameId;
+            this.gameType = source.gameType;
+            this.oddsName = source.oddsName;
+            this.oddsFormat = source.oddsFormat;
+            this.timeout = source.timeout;
+        }
         public Builder withMarketTypeId(final Integer marketTypeId) {
             this.marketTypeId = marketTypeId;
             return this;

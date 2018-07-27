@@ -1,6 +1,7 @@
 
 package gabriel.betbot.utils;
 
+import gabriel.betbot.service.TradeService;
 import gabriel.betbot.trades.Odds;
 import gabriel.betbot.trades.OddsType;
 import gabriel.betbot.trades.Trade;
@@ -17,6 +18,9 @@ public class TradeUtil {
     public static boolean arbitrageOpportunityExists(final Trade trade) {
         Odds pinnacleOdds = getPinnacleOdds(trade.getBookieOdds());
         if (pinnacleOdds == null) {
+            return false;
+        }
+        if (TradeService.DRAW_NO_BET.equals(trade.getHandicap()) || TradeService.QUARTER_HANDICAP.equals(trade.getHandicap())) {
             return false;
         }
         return pinnacleOdds.getOddsType() == OddsType.ONE_X_TWO ? 

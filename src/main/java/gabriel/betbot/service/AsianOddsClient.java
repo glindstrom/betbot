@@ -511,7 +511,7 @@ public class AsianOddsClient {
         loginIfNeeded();
         List<Header> headers = ImmutableList.of(tokenHeader);
         String feedUrl = BASE_URL + "/GetFeeds?marketTypeId=" + marketType.getId() + "&OddsFormat=" + ODDS_FORMAT + "&SportsType=" + sportsType.getId();
-        
+
         CloseableHttpResponse response = client.doGet(feedUrl, headers);
         if (!responseOk(response)) {
             return null;
@@ -519,11 +519,13 @@ public class AsianOddsClient {
         String responseBody = "";
         try {
             responseBody = EntityUtils.toString(response.getEntity());
-            String savePath = "/home/gabriel/Documents/Repos/betbot/ResponseData/" + sportsType + "_" + marketType;
-            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("ddMMyyyyHHmm");
-            savePath += dtf.format(LocalDateTime.now());
-            savePath += ".json";
-            FileUtil.writeStringToFile(responseBody, savePath);
+            if (sportsType == SportsType.FOOTBALL) {
+                String savePath = "/home/gabriel/Documents/Repos/betbot/ResponseData/" + sportsType + "_" + marketType;
+                DateTimeFormatter dtf = DateTimeFormatter.ofPattern("ddMMyyyyHHmm");
+                savePath += dtf.format(LocalDateTime.now());
+                savePath += ".json";
+                FileUtil.writeStringToFile(responseBody, savePath);
+            }
         } catch (IOException | ParseException ex) {
             throw new RuntimeException(ex);
         }

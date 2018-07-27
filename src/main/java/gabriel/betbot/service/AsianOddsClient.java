@@ -18,6 +18,7 @@ import gabriel.betbot.dtos.tradefeed.MatchGame;
 import gabriel.betbot.dtos.tradefeed.TradeFeedDto;
 import gabriel.betbot.trades.Bet;
 import gabriel.betbot.trades.BetStatus;
+import gabriel.betbot.trades.MarketType;
 import gabriel.betbot.trades.Odds;
 import gabriel.betbot.trades.OddsType;
 import gabriel.betbot.trades.SportsType;
@@ -76,7 +77,9 @@ public class AsianOddsClient {
     private final Client client;
     private Header tokenHeader;
     private long footballSince;
+    private long footballSinceEarly;
     private long basketballSince;
+    private long basketballSinceEarly;
     private int currentCredit;
 
     private Set<Long> matchIdWithBets;
@@ -213,7 +216,7 @@ public class AsianOddsClient {
                 .withOddsName(bet.getOddsName().getName())
                 .withOddsFormat(ODDS_FORMAT)
                 .withIsFullTime(bet.isIsFullTime() ? 1 : 0)
-                .withMarketTypeId(MARKET_TYPE_TODAY)
+                .withMarketTypeId(bet.getMarketType().getId())
                 .withPlaceBetId(bet.getId().toHexString())
                 .withSportsType(bet.getSportsType().getId())
                 .build();
@@ -292,20 +295,24 @@ public class AsianOddsClient {
 
     public List<Trade> getTrades() {
         List<Trade> trades = new ArrayList();
-        trades.addAll(getFootballTrades());
-        trades.addAll(getBasketballTrades());
+        trades.addAll(getFootballTrades(MarketType.TODAY));
+        trades.addAll(getBasketballTrades(MarketType.TODAY));
 
         return ImmutableList.copyOf(trades);
     }
 
-    public List<Trade> getFootballTrades() {
-        LOG.info("Fetching football trades");
-        TradeFeedDto footballTradeFeedDto = this.getFootballFeeds();
+    public List<Trade> getFootballTrades(final MarketType marketType) {
+        LOG.info("Fetching {} football trades", marketType);
+        TradeFeedDto footballTradeFeedDto = getTradeFeeds(SportsType.FOOTBALL, marketType);
         if (footballTradeFeedDto == null || !isTradeFeedResponseOk(footballTradeFeedDto)) {
             this.tokenHeader = null;
             return ImmutableList.of();
         }
-        this.footballSince = footballTradeFeedDto.result != null ? footballTradeFeedDto.result.since : this.footballSince;
+        if (marketType == MarketType.TODAY) {
+            this.footballSince = footballTradeFeedDto.result != null ? footballTradeFeedDto.result.since : this.footballSince;
+        } else if (marketType == MarketType.EARLY) {
+            this.footballSinceEarly = footballTradeFeedDto.result != null ? footballTradeFeedDto.result.since : this.footballSinceEarly;
+        }
 
         return ImmutableList.copyOf(tradeFeedDtoToTrades(footballTradeFeedDto));
     }
@@ -318,14 +325,18 @@ public class AsianOddsClient {
         return true;
     }
 
-    public List<Trade> getBasketballTrades() {
-        LOG.info("Fetching basketball trades");
-        TradeFeedDto basketTradeFeedDto = this.getBasketballFeeds();
+    public List<Trade> getBasketballTrades(final MarketType marketType) {
+        LOG.info("Fetching {} basketball trades", marketType);
+        TradeFeedDto basketTradeFeedDto = this.getTradeFeeds(SportsType.BASKETBALL, marketType);
         if (basketTradeFeedDto == null || !isTradeFeedResponseOk(basketTradeFeedDto)) {
             this.tokenHeader = null;
             return ImmutableList.of();
         }
-        this.basketballSince = basketTradeFeedDto.result != null ? basketTradeFeedDto.result.since : this.basketballSince;
+        if (marketType == MarketType.TODAY) {
+            this.basketballSince = basketTradeFeedDto.result != null ? basketTradeFeedDto.result.since : this.basketballSince;
+        } else if (marketType == MarketType.EARLY) {
+            this.basketballSinceEarly = basketTradeFeedDto.result != null ? basketTradeFeedDto.result.since : this.basketballSinceEarly;
+        }
 
         return ImmutableList.copyOf(tradeFeedDtoToTrades(basketTradeFeedDto));
     }
@@ -488,25 +499,19 @@ public class AsianOddsClient {
         return oddsBuilder.build();
     }
 
-    public TradeFeedDto getFootballFeeds() {
-        return getTradeFeeds(SportsType.FOOTBALL);
+    public TradeFeedDto getFootballFeeds(final MarketType marketType) {
+        return getTradeFeeds(SportsType.FOOTBALL, marketType);
     }
 
-    public TradeFeedDto getBasketballFeeds() {
-        return getTradeFeeds(SportsType.BASKETBALL);
+    public TradeFeedDto getBasketballFeeds(final MarketType marketType) {
+        return getTradeFeeds(SportsType.BASKETBALL, marketType);
     }
 
-    public TradeFeedDto getTradeFeeds(final SportsType sportsType) {
+    public TradeFeedDto getTradeFeeds(final SportsType sportsType, final MarketType marketType) {
         loginIfNeeded();
         List<Header> headers = ImmutableList.of(tokenHeader);
-        String feedUrl = BASE_URL + "/GetFeeds?marketTypeId=" + MARKET_TYPE_TODAY + "&OddsFormat=" + ODDS_FORMAT + "&SportsType=" + sportsType.getId();
-        String since = "";
-        if (sportsType == SportsType.FOOTBALL && this.footballSince > 0) {
-            since = "&since=" + this.footballSince;
-        } else if (sportsType == SportsType.BASKETBALL && this.basketballSince > 0) {
-            since = "&since=" + this.basketballSince;
-        }
-        feedUrl += since;
+        String feedUrl = BASE_URL + "/GetFeeds?marketTypeId=" + marketType.getId() + "&OddsFormat=" + ODDS_FORMAT + "&SportsType=" + sportsType.getId();
+        
         CloseableHttpResponse response = client.doGet(feedUrl, headers);
         if (!responseOk(response)) {
             return null;
@@ -514,13 +519,13 @@ public class AsianOddsClient {
         String responseBody = "";
         try {
             responseBody = EntityUtils.toString(response.getEntity());
-            String savePath = "/home/gabriel/Documents/Repos/betbot/ResponseData/" + sportsType;
+            String savePath = "/home/gabriel/Documents/Repos/betbot/ResponseData/" + sportsType + "_" + marketType;
             DateTimeFormatter dtf = DateTimeFormatter.ofPattern("ddMMyyyyHHmm");
             savePath += dtf.format(LocalDateTime.now());
             savePath += ".json";
             FileUtil.writeStringToFile(responseBody, savePath);
         } catch (IOException | ParseException ex) {
-           throw new RuntimeException(ex);
+            throw new RuntimeException(ex);
         }
         return JsonMapper.jsonToObject(responseBody, TradeFeedDto.class);
     }

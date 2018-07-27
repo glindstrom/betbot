@@ -84,8 +84,8 @@ public class TradeService {
     private static final BigDecimal MAX_FRACTION = BigDecimal.valueOf(0.01);
     private static final int BET_FREQUENCY_IN_MILLISECONDS = 60 * 1000;
     private static final int MAX_CLOSING_ODDS_MINUTES = 5;
-    private static final String DRAW_NO_BET = "0.0";
-    private static final String QUARTER_HANDICAP = "0-0.5";
+    public static final String DRAW_NO_BET = "0.0";
+    public static final String QUARTER_HANDICAP = "0-0.5";
     private static final int MINIMUM_MAXIMUM_AMOUNT = 1000;
 
     private final AsianOddsClient asianOddsClient;
@@ -115,8 +115,10 @@ public class TradeService {
     public void doBets() {
         matchIdToTrue1X2Odds = new HashMap();
         matchIdToTrue1X2OddsHalfTime = new HashMap();
-        int numPlacedFootBallBets = doBets(asianOddsClient.getFootballTrades());
-        int numPlacedBasketBets = doBets(asianOddsClient.getBasketballTrades());
+        int numPlacedFootBallBets = doBets(asianOddsClient.getFootballTrades(MarketType.TODAY))
+                + doBets(asianOddsClient.getFootballTrades(MarketType.EARLY));
+        int numPlacedBasketBets = doBets(asianOddsClient.getBasketballTrades(MarketType.TODAY))
+                + doBets(asianOddsClient.getBasketballTrades(MarketType.EARLY));
         LOG.info("Football bets placed: {}, basketball bets places: {}", numPlacedFootBallBets, numPlacedBasketBets);
         LOG.info(bankrollService.bankrollToString());
         updateResults(numPlacedFootBallBets + numPlacedBasketBets);
@@ -142,12 +144,12 @@ public class TradeService {
     private int doBets(final List<Trade> tradesList) {
         List<Trade> trades = tradesList.stream()
                 .filter(trade -> trade.getBookieOdds().containsKey(PINNACLE) && trade.getBookieOdds().keySet().size() > 1)
+                .filter(noArbitrageOpportunityExists())
                 .collect(toList());
         if (trades.isEmpty()) {
             LOG.info("No potential trades found at this time");
         }
         List<Bet> bets = trades.stream()
-                .filter(noArbitrageOpportunityExists())
                 .map(this::addTrueOdds)
                 .map(this::addTrueDrawNoBetAndQuarterHandicapOdds)
                 .filter(bet -> bet.getTrueOdds() != null)
@@ -202,6 +204,9 @@ public class TradeService {
     private Bet addClosingOddsToExistingBet(final Bet bet) {
         LocalDateTime now = LocalDateTime.now();
         if (ChronoUnit.MINUTES.between(now, bet.getStartTime()) > MAX_CLOSING_ODDS_MINUTES) {
+            return bet;
+        }
+        if (bet.getStartTime().isBefore(now)) {
             return bet;
         }
         List<Bet> placedBets = betRepository.findByMatchIdAndStatus(bet.getMatchId(), BetStatus.SUCCESS);

@@ -93,7 +93,7 @@ public class AsianOddsBetResultUpdater {
                     .withPnl(betSummary.pnl)
                     .withActualStake(betSummary.stake);
         }
-        LOG.info("Updating bet {}, result: {}", bet.getId(), betSummary.pnl);
+        LOG.info("Updated bet {}, result: {}", bet.getId(), betSummary.pnl);
         return betBuilder.build();
     }
 

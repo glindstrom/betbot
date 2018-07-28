@@ -116,9 +116,9 @@ public class TradeService {
         matchIdToTrue1X2Odds = new HashMap();
         matchIdToTrue1X2OddsHalfTime = new HashMap();
         int numPlacedFootBallBets = doBets(asianOddsClient.getFootballTrades(MarketType.TODAY));
-               // + doBets(asianOddsClient.getFootballTrades(MarketType.EARLY));
+        // + doBets(asianOddsClient.getFootballTrades(MarketType.EARLY));
         int numPlacedBasketBets = doBets(asianOddsClient.getBasketballTrades(MarketType.TODAY));
-              //  + doBets(asianOddsClient.getBasketballTrades(MarketType.EARLY));
+        //  + doBets(asianOddsClient.getBasketballTrades(MarketType.EARLY));
         LOG.info("Football bets placed: {}, basketball bets places: {}", numPlacedFootBallBets, numPlacedBasketBets);
         LOG.info(bankrollService.bankrollToString());
         updateResults(numPlacedFootBallBets + numPlacedBasketBets);
@@ -210,11 +210,13 @@ public class TradeService {
         if (bet.getStartTime().isBefore(now)) {
             return bet;
         }
-        List<Bet> placedBets = betRepository.findByGameIdAndStatus(bet.getGameId(), BetStatus.SUCCESS);
+        List<Bet> placedBets = betRepository.findByMatchIdAndStatus(bet.getMatchId(), BetStatus.SUCCESS);
         Bet placedBet = placedBets.stream()
                 .filter(b -> b.isIsFullTime() == bet.isIsFullTime()
                         && b.getOddsName() == bet.getOddsName()
                         && b.getOddsType() == bet.getOddsType()
+                        && ((b.getFavoured() == null && bet.getFavoured() == null)
+                        || b.getFavoured() == bet.getFavoured())
                         && ((b.getBetDescription() == null && bet.getBetDescription() == null)
                         || (b.getBetDescription().equals(bet.getBetDescription()))))
                 .findAny()

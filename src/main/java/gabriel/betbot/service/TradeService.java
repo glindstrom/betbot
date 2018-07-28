@@ -131,6 +131,7 @@ public class TradeService {
         if (bankrollHasChanged() || numberOfBetsPlaced > 0) {
             LOG.info("Updating results");
             updater.updateResults(LocalDate.now());
+            updater.updateResults(LocalDate.now().minusDays(1));
             this.todayProfitNLoss = bankrollService.getTodayPnL();
             this.yesterDayProfitNLoss = bankrollService.getYesterdayPnL();
         }
@@ -143,7 +144,7 @@ public class TradeService {
 
     private int doBets(final List<Trade> tradesList) {
         List<Trade> trades = tradesList.stream()
-                .filter(trade -> trade.getBookieOdds().containsKey(PINNACLE) && trade.getBookieOdds().keySet().size() > 1)
+                .filter(trade -> trade.getBookieOdds().containsKey(PINNACLE))
                 .filter(noArbitrageOpportunityExists())
                 .collect(toList());
         if (trades.isEmpty()) {
@@ -276,6 +277,9 @@ public class TradeService {
     }
 
     private Trade addEdges(final Trade trade) {
+        if (trade.getBookieOdds().keySet().size() < 2) {
+            return trade;
+        }
         Map<String, Odds> bookieOdds = trade.getBookieOdds().values().stream()
                 .map(odds -> addEdge(odds, trade.getTrueOdds()))
                 .collect(Collectors.toMap(Odds::getBookie, Function.identity()));

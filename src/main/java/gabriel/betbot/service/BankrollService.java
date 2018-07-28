@@ -38,6 +38,11 @@ public class BankrollService {
         return bankroll.getYesterdayPnl();
     }
     
+    public BigDecimal getCredit() {
+        getIfNull();
+        return bankroll.getCredit();
+    }
+    
     private void getIfNull() {
         if (bankroll == null) {
             bankroll = asianOddsClient.getBankroll();

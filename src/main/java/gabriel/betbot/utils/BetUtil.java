@@ -6,6 +6,7 @@ import gabriel.betbot.trades.OddsType;
 import gabriel.betbot.trades.Team;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.List;
 
 /**
  *
@@ -112,6 +113,18 @@ public class BetUtil {
                 .withHomeOdds(homeOdds)
                 .withAwayOdds(awayOdds)
                 .build();
+    }
+    
+    public static BigDecimal calculateProfit(final List<Bet> bets) {
+        return bets.stream()
+                .map(Bet::getPnl)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+    
+    public static BigDecimal calculateAverageExpectedROIwhenBetIsPlaced(final List<Bet> bets) {
+         return bets.stream()
+                .map(Bet::getEdge)
+                .reduce(BigDecimal.ZERO, BigDecimal::add).divide(BigDecimal.valueOf(bets.size()), 4, BigDecimal.ROUND_HALF_UP);
     }
 
     private static BigDecimal calculateTrueQuarterHandicapAsianOddsForFavouredTeam(final BigDecimal oddsWin, final BigDecimal oddsLoss, final BigDecimal oddsDraw) {

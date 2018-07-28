@@ -83,7 +83,7 @@ public class TradeService {
     private static final BigDecimal MAX_ODDS_REGULAR = BigDecimal.valueOf(10);
     private static final BigDecimal MAX_FRACTION = BigDecimal.valueOf(0.01);
     private static final int BET_FREQUENCY_IN_MILLISECONDS = 60 * 1000;
-    private static final int MAX_CLOSING_ODDS_MINUTES = 5;
+    private static final int MAX_CLOSING_ODDS_MINUTES = 10;
     public static final String DRAW_NO_BET = "0.0";
     public static final String QUARTER_HANDICAP = "0-0.5";
     private static final int MINIMUM_MAXIMUM_AMOUNT = 1000;
@@ -93,8 +93,7 @@ public class TradeService {
     private final BankrollService bankrollService;
     private final AsianOddsBetResultUpdater updater;
 
-    private BigDecimal todayProfitNLoss;
-    private BigDecimal yesterDayProfitNLoss;
+    private BigDecimal currentCredit;
     private Map<Long, Odds> matchIdToTrue1X2Odds;
     private Map<Long, Odds> matchIdToTrue1X2OddsHalfTime;
 
@@ -107,8 +106,7 @@ public class TradeService {
         this.betRepository = betRepository;
         this.bankrollService = bankrollService;
         this.updater = updater;
-        this.todayProfitNLoss = BigDecimal.ZERO;
-        this.yesterDayProfitNLoss = BigDecimal.ZERO;
+        this.currentCredit = BigDecimal.ZERO;
     }
 
     @Scheduled(fixedDelay = BET_FREQUENCY_IN_MILLISECONDS)
@@ -117,29 +115,28 @@ public class TradeService {
         matchIdToTrue1X2OddsHalfTime = new HashMap();
         int numPlacedFootBallBets = doBets(asianOddsClient.getFootballTrades(MarketType.TODAY));
         // + doBets(asianOddsClient.getFootballTrades(MarketType.EARLY));
-        int numPlacedBasketBets = doBets(asianOddsClient.getBasketballTrades(MarketType.TODAY));
+       // int numPlacedBasketBets = doBets(asianOddsClient.getBasketballTrades(MarketType.TODAY));
         //  + doBets(asianOddsClient.getBasketballTrades(MarketType.EARLY));
-        LOG.info("Football bets placed: {}, basketball bets places: {}", numPlacedFootBallBets, numPlacedBasketBets);
+        LOG.info("Football bets placed: {}", numPlacedFootBallBets);
         LOG.info(bankrollService.bankrollToString());
-        updateResults(numPlacedFootBallBets + numPlacedBasketBets);
+        updateResults();
         asianOddsClient.clearMatchIdCache();
         bankrollService.clear();
         asianOddsClient.resetCurrentCredit();
     }
 
-    private void updateResults(int numberOfBetsPlaced) {
-        if (bankrollHasChanged() || numberOfBetsPlaced > 0) {
+    private void updateResults() {
+
+        if (bankrollHasChanged()) {
             LOG.info("Updating results");
             updater.updateResults(LocalDate.now());
             updater.updateResults(LocalDate.now().minusDays(1));
-            this.todayProfitNLoss = bankrollService.getTodayPnL();
-            this.yesterDayProfitNLoss = bankrollService.getYesterdayPnL();
+            this.currentCredit = bankrollService.getCredit();
         }
     }
 
     private boolean bankrollHasChanged() {
-        return (bankrollService.getTodayPnL().compareTo(this.todayProfitNLoss) != 0)
-                || (bankrollService.getYesterdayPnL().compareTo(this.yesterDayProfitNLoss) != 0);
+        return (bankrollService.getCredit().compareTo(this.currentCredit) != 0);
     }
 
     private int doBets(final List<Trade> tradesList) {
@@ -207,12 +204,10 @@ public class TradeService {
         if (ChronoUnit.MINUTES.between(now, bet.getStartTime()) > MAX_CLOSING_ODDS_MINUTES) {
             return bet;
         }
-        if (bet.getStartTime().isBefore(now)) {
-            return bet;
-        }
         List<Bet> placedBets = betRepository.findByMatchIdAndStatus(bet.getMatchId(), BetStatus.SUCCESS);
         Bet placedBet = placedBets.stream()
                 .filter(b -> b.isIsFullTime() == bet.isIsFullTime()
+                        && b.getStartTime().isEqual(bet.getStartTime())
                         && b.getOddsName() == bet.getOddsName()
                         && b.getOddsType() == bet.getOddsType()
                         && ((b.getFavoured() == null && bet.getFavoured() == null)

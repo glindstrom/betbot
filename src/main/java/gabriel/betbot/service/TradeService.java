@@ -77,6 +77,7 @@ public class TradeService {
     public static final long NORMAL_HOURS = 2;
     public static final long EARLY_HOURS = 10;
     private static final BigDecimal MIN_EDGE_CLOSE_TO_START = BigDecimal.valueOf(0.01);
+    private static final BigDecimal MAX_EDGE_CLOSE_TO_START = BigDecimal.valueOf(0.023);
     private static final BigDecimal MIN_EDGE_NORMAL = BigDecimal.valueOf(0.02);
     private static final BigDecimal MIN_EDGE_EARLY = BigDecimal.valueOf(0.05);
     private static final BigDecimal MAX_ODDS_CLOSE_TO_START = BigDecimal.valueOf(10);
@@ -156,7 +157,8 @@ public class TradeService {
                 .flatMap(Collection::stream)
                 .filter(asianOddsHasTwoPossibleOutcomes())
                 .map(bet -> addClosingOddsToExistingBet(bet))
-                .filter(hasPositiveEdge())
+                .filter(edgeFilter())
+                .filter(bet -> bet.getTrueOdds().compareTo(bet.getPinnacleOdds()) > 0)
                 .collect(toList());
 
         if (bets.isEmpty()) {
@@ -313,10 +315,10 @@ public class TradeService {
                 || (bet.getBetDescription().endsWith(".5") && !bet.getBetDescription().contains("-"));
     }
 
-    private static Predicate<Bet> hasPositiveEdge() {
+    private static Predicate<Bet> edgeFilter() {
         return bet -> {
-            return hasEdgeCloseToStart(bet)
-                    || hasNormalEdge(bet);
+            return hasEdgeCloseToStart(bet);
+                   // || hasNormalEdge(bet);
 //                    || hasEarlyEdge(bet);
         };
     }
@@ -326,7 +328,9 @@ public class TradeService {
             return false;
         }
         return oddsAreLessThanOrEqualTo(bet.getOdds(), MAX_ODDS_CLOSE_TO_START)
-                && edgeIsGreaterThan(bet.getEdge(), MIN_EDGE_CLOSE_TO_START);
+                && edgeIsGreaterThan(bet.getEdge(), MIN_EDGE_CLOSE_TO_START)
+                && BetUtil.edgeIsLessThanOrEqualTo(bet.getEdge(), MAX_EDGE_CLOSE_TO_START);
+
     }
 
     private static boolean hasNormalEdge(final Bet bet) {

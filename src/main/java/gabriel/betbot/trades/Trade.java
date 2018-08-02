@@ -1,6 +1,7 @@
 package gabriel.betbot.trades;
 
 import com.google.common.collect.ImmutableMap;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Map;
 
@@ -24,6 +25,7 @@ public class Trade {
     private final SportsType sportsType;
     private final Team favoured;
     private final String leagueName;
+    private final BigDecimal pinnacleMargin;
 
     private Trade(final Builder builder) {
         this.bookieOdds = builder.bookmakerOdds;
@@ -40,6 +42,7 @@ public class Trade {
         this.sportsType = builder.sportsType;
         this.favoured = builder.favoured;
         this.leagueName = builder.leagueName;
+        this.pinnacleMargin = builder.pinnacleMargin;
     }
 
     public Map<String, Odds> getBookieOdds() {
@@ -97,6 +100,11 @@ public class Trade {
     public String getLeagueName() {
         return leagueName;
     }
+
+    public BigDecimal getPinnacleMargin() {
+        return pinnacleMargin;
+    }
+    
     
     @Override
     public String toString() {
@@ -128,6 +136,7 @@ public class Trade {
         private SportsType sportsType;
         private Team favoured;
         private String leagueName;
+        private BigDecimal pinnacleMargin;
 
 
         public Builder(final Trade source) {
@@ -145,6 +154,7 @@ public class Trade {
             this.sportsType = source.sportsType;
             this.favoured = source.favoured;
             this.leagueName = source.leagueName;
+            this.pinnacleMargin = source.pinnacleMargin;
         }
 
         public Builder() {
@@ -220,6 +230,11 @@ public class Trade {
         
         public Builder withLeagueName(final String leagueName) {
             this.leagueName = leagueName;
+            return this;
+        }
+        
+        public Builder withPinnacleMargin(final BigDecimal margin) {
+            this.pinnacleMargin = margin;
             return this;
         }
 

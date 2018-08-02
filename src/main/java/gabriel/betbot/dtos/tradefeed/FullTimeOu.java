@@ -27,4 +27,9 @@ public class FullTimeOu {
         this.goal = null;
     }
 
+    @Override
+    public String toString() {
+        return "FullTimeOu{" + "bookieOdds=" + bookieOdds + ", goal=" + goal + '}';
+    }
+
 }

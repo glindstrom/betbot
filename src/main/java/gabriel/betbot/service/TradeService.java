@@ -77,12 +77,13 @@ public class TradeService {
     public static final long NORMAL_HOURS = 2;
     public static final long EARLY_HOURS = 10;
     private static final BigDecimal MIN_EDGE_CLOSE_TO_START = BigDecimal.valueOf(0.01);
-    private static final BigDecimal MAX_EDGE_CLOSE_TO_START = BigDecimal.valueOf(0.023);
+    private static final BigDecimal MAX_EDGE_CLOSE_TO_START = BigDecimal.valueOf(0.05);
     private static final BigDecimal MIN_EDGE_NORMAL = BigDecimal.valueOf(0.02);
     private static final BigDecimal MIN_EDGE_EARLY = BigDecimal.valueOf(0.05);
     private static final BigDecimal MAX_ODDS_CLOSE_TO_START = BigDecimal.valueOf(10);
     private static final BigDecimal MAX_ODDS_REGULAR = BigDecimal.valueOf(10);
     private static final BigDecimal MAX_FRACTION = BigDecimal.valueOf(0.01);
+    private static final BigDecimal MAX_PINNACLE_MARGIN = BigDecimal.valueOf(0.03);
     private static final int BET_FREQUENCY_IN_MILLISECONDS = 60 * 1000;
     private static final int MAX_CLOSING_ODDS_MINUTES = 10;
     public static final String DRAW_NO_BET = "0.0";
@@ -149,6 +150,8 @@ public class TradeService {
             LOG.info("No potential trades found at this time");
         }
         List<Bet> bets = trades.stream()
+                .map(this::addPinnacleMargin)
+                .filter(bet -> bet.getPinnacleMargin().compareTo(MAX_PINNACLE_MARGIN) < 0)
                 .map(this::addTrueOdds)
                 .map(this::addTrueDrawNoBetAndQuarterHandicapOdds)
                 .filter(bet -> bet.getTrueOdds() != null)
@@ -274,6 +277,12 @@ public class TradeService {
         }
         return new Trade.Builder(trade).withTrueOdds(trueOdds).build();
     }
+    
+    private Trade addPinnacleMargin(final Trade trade) {
+        return new Trade.Builder(trade)
+                .withPinnacleMargin(TradeUtil.calculateMargin(trade))
+                .build();
+    }
 
     private Trade addEdges(final Trade trade) {
         if (trade.getBookieOdds().keySet().size() < 2) {
@@ -317,8 +326,8 @@ public class TradeService {
 
     private static Predicate<Bet> edgeFilter() {
         return bet -> {
-            return hasEdgeCloseToStart(bet);
-                   // || hasNormalEdge(bet);
+            return hasEdgeCloseToStart(bet)
+                    || hasNormalEdge(bet);
 //                    || hasEarlyEdge(bet);
         };
     }
@@ -329,13 +338,14 @@ public class TradeService {
         }
         return oddsAreLessThanOrEqualTo(bet.getOdds(), MAX_ODDS_CLOSE_TO_START)
                 && edgeIsGreaterThan(bet.getEdge(), MIN_EDGE_CLOSE_TO_START)
-                && BetUtil.edgeIsLessThanOrEqualTo(bet.getEdge(), MAX_EDGE_CLOSE_TO_START);
+                && BetUtil.edgeIsLessThanOrEqualTo(bet.getEdge(),MAX_EDGE_CLOSE_TO_START);
 
     }
 
     private static boolean hasNormalEdge(final Bet bet) {
         return oddsAreLessThanOrEqualTo(bet.getOdds(), MAX_ODDS_REGULAR)
-                && edgeIsGreaterThan(bet.getEdge(), MIN_EDGE_NORMAL);
+                && edgeIsGreaterThan(bet.getEdge(), MIN_EDGE_NORMAL)
+                 && BetUtil.edgeIsLessThanOrEqualTo(bet.getEdge(),MAX_EDGE_CLOSE_TO_START);
     }
 
     private static boolean hasEarlyEdge(final Bet bet) {
@@ -404,6 +414,7 @@ public class TradeService {
                 .withFavoured(trade.getFavoured())
                 .withMarketType(MarketType.getById(trade.getMarketTypeId()))
                 .withLeagueName(trade.getLeagueName())
+                .withPinnacleMargin(trade.getPinnacleMargin())
                 .build();
 
     }

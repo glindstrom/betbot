@@ -27,4 +27,8 @@ public class HalfTimeHdp {
         this.handicap = null;
     }
 
+    @Override
+    public String toString() {
+        return "HalfTimeHdp{" + "bookieOdds=" + bookieOdds + ", handicap=" + handicap + '}';
+    }
 }

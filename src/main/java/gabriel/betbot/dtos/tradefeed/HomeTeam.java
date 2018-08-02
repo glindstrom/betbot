@@ -31,7 +31,10 @@ public class HomeTeam {
         this.redCards = null;
         this.score = null;
     }
-    
-    
+
+    @Override
+    public String toString() {
+        return "HomeTeam{" + "name=" + name + ", redCards=" + redCards + ", score=" + score + '}';
+    }
 
 }

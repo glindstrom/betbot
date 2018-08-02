@@ -21,5 +21,10 @@ public class HalfTimeOneXTwo {
     public HalfTimeOneXTwo() {
         this.bookieOdds = null;
     }
+
+    @Override
+    public String toString() {
+        return "HalfTimeOneXTwo{" + "bookieOdds=" + bookieOdds + '}';
+    }
     
 }

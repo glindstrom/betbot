@@ -27,4 +27,9 @@ public class HalfTimeOu {
         this.goal = null;
     }
 
+    @Override
+    public String toString() {
+        return "HalfTimeOu{" + "bookieOdds=" + bookieOdds + ", goal=" + goal + '}';
+    }
+
 }

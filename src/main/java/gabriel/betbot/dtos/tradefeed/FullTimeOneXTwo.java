@@ -21,5 +21,9 @@ public class FullTimeOneXTwo {
     public FullTimeOneXTwo() {
         this.bookieOdds = null;
     }
-    
+
+    @Override
+    public String toString() {
+        return "FullTimeOneXTwo{" + "bookieOdds=" + bookieOdds + '}';
+    }
 }

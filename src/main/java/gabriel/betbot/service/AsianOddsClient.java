@@ -357,7 +357,7 @@ public class AsianOddsClient {
         return ImmutableList.copyOf(tradeFeedDtoToTrades(basketTradeFeedDto));
     }
 
-    private static List<Trade> tradeFeedDtoToTrades(final TradeFeedDto tradeFeedDto) {
+    static List<Trade> tradeFeedDtoToTrades(final TradeFeedDto tradeFeedDto) {
         if (tradeFeedDto.result == null || tradeFeedDto.result.sports == null || tradeFeedDto.result.sports.isEmpty()) {
             LOG.info("No trades were found at this time");
             return ImmutableList.of();
@@ -373,12 +373,12 @@ public class AsianOddsClient {
     private static List<Trade> tradeFeedToTrades(final ImmutableList<MatchGame> matchGames, Integer sportsType) {
         List<Trade> trades = new ArrayList();
         matchGames.stream().forEach((matchGame) -> {
-            addHdpTrade(matchGame, trades, true, sportsType);
-            addHdpTrade(matchGame, trades, false, sportsType);
+           // addHdpTrade(matchGame, trades, true, sportsType);
+          //  addHdpTrade(matchGame, trades, false, sportsType);
             addOneXTwoTrade(matchGame, trades, true, sportsType);
             addOneXTwoTrade(matchGame, trades, false, sportsType);
-            addOuTrade(matchGame, trades, true, sportsType);
-            addOuTrade(matchGame, trades, false, sportsType);
+          //  addOuTrade(matchGame, trades, true, sportsType);
+          //  addOuTrade(matchGame, trades, false, sportsType);
         });
         return trades;
     }

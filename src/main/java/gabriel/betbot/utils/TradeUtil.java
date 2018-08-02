@@ -27,6 +27,15 @@ public class TradeUtil {
                 arbitrageExistsForTradeWithThreePossibleOutcomes(trade) : arbitrageExistsForTradeWithTwoPossibleOutcomes(trade);
     }
     
+    public static BigDecimal calculateMargin(final Trade trade) {
+        Odds pinnacleOdds = getPinnacleOdds(trade.getBookieOdds());
+        BigDecimal inverseSum = MathUtil.inverse(pinnacleOdds.getOdds1()).add(MathUtil.inverse(pinnacleOdds.getOdds2()));
+        if (pinnacleOdds.getOddsType() == OddsType.ONE_X_TWO) {
+            inverseSum = inverseSum.add(MathUtil.inverse(pinnacleOdds.getOddsX()));
+        }
+        return inverseSum.subtract(BigDecimal.ONE);
+    }
+    
     private static BigDecimal getBest1Odds(final Map<String, Odds> bookieOdds) {
         Map<String, Odds> bookieToOdds = new HashMap(bookieOdds);
         bookieToOdds.remove("PIN");

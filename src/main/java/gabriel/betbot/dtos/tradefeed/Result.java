@@ -30,7 +30,7 @@ public class Result {
 
     @Override
     public String toString() {
-        return "Result{" + "since=" + since + '}';
-    } 
+        return "Result{" + "since=" + since + ", sports=" + sports + '}';
+    }
     
 }

@@ -30,5 +30,10 @@ public class AwayTeam {
         this.name = null;
         this.redCards = null;
         this.score = null;
-    } 
+    }
+
+    @Override
+    public String toString() {
+        return "AwayTeam{" + "name=" + name + ", redCards=" + redCards + ", score=" + score + '}';
+    }
 }

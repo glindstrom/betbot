@@ -160,5 +160,9 @@ public class MatchGame {
         this.willBeRemoved = null;
     }
 
-    
+    @Override
+    public String toString() {
+        return "MatchGame{" + "awayTeam=" + awayTeam + ", expectedLength=" + expectedLength + ", favoured=" + favoured + ", fullTimeHdp=" + fullTimeHdp + ", fullTimeOneXTwo=" + fullTimeOneXTwo + ", fullTimeOu=" + fullTimeOu + ", gameId=" + gameId + ", halfTimeHdp=" + halfTimeHdp + ", halfTimeOneXTwo=" + halfTimeOneXTwo + ", halfTimeOu=" + halfTimeOu + ", homeTeam=" + homeTeam + ", inGameMinutes=" + inGameMinutes + ", isActive=" + isActive + ", isLive=" + isLive + ", leagueId=" + leagueId + ", leagueName=" + leagueName + ", marketType=" + marketType + ", marketTypeId=" + marketTypeId + ", matchId=" + matchId + ", startTime=" + startTime + ", startsOn=" + startsOn + ", toBeRemovedOn=" + toBeRemovedOn + ", updatedDateTime=" + updatedDateTime + ", willBeRemoved=" + willBeRemoved + '}';
+    }
+
 }

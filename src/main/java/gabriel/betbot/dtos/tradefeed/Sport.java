@@ -27,5 +27,10 @@ public class Sport {
         this.matchGames = null;
         this.sportsType = null;
     }
+
+    @Override
+    public String toString() {
+        return "Sport{" + "matchGames=" + matchGames + ", sportsType=" + sportsType + '}';
+    }
     
 }

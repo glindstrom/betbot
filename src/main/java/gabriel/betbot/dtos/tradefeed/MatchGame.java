@@ -40,6 +40,10 @@ public class MatchGame {
     public final Integer expectedLength;
     @JsonProperty("Favoured")
     public final Integer favoured;
+    @JsonProperty("FullTimeFavoured")
+    public final Integer fullTimeFavoured;
+    @JsonProperty("HalfTimeFavoured")
+    public final Integer halfTimeFavoured;
     @JsonProperty("FullTimeHdp")
     public final FullTimeHdp fullTimeHdp;
     @JsonProperty("FullTimeOneXTwo")
@@ -86,6 +90,8 @@ public class MatchGame {
     public MatchGame(AwayTeam awayTeam, 
             final Integer expectedLength, 
             final Integer favoured, 
+            final Integer halfTimeFavoured,
+            final Integer fullTImeFavoured,
             final FullTimeHdp fullTimeHdp, 
             final FullTimeOneXTwo fullTimeOneXTwo, 
             final FullTimeOu fullTimeOu, 
@@ -110,6 +116,8 @@ public class MatchGame {
         this.awayTeam = awayTeam;
         this.expectedLength = expectedLength;
         this.favoured = favoured;
+        this.halfTimeFavoured = halfTimeFavoured;
+        this.fullTimeFavoured = fullTImeFavoured;
         this.fullTimeHdp = fullTimeHdp;
         this.fullTimeOneXTwo = fullTimeOneXTwo;
         this.fullTimeOu = fullTimeOu;
@@ -137,6 +145,8 @@ public class MatchGame {
         this.awayTeam = null;
         this.expectedLength = null;
         this.favoured = null;
+        this.halfTimeFavoured = null;
+        this.fullTimeFavoured = null;
         this.fullTimeHdp = null;
         this.fullTimeOneXTwo = null;
         this.fullTimeOu = null;
@@ -162,7 +172,7 @@ public class MatchGame {
 
     @Override
     public String toString() {
-        return "MatchGame{" + "awayTeam=" + awayTeam + ", expectedLength=" + expectedLength + ", favoured=" + favoured + ", fullTimeHdp=" + fullTimeHdp + ", fullTimeOneXTwo=" + fullTimeOneXTwo + ", fullTimeOu=" + fullTimeOu + ", gameId=" + gameId + ", halfTimeHdp=" + halfTimeHdp + ", halfTimeOneXTwo=" + halfTimeOneXTwo + ", halfTimeOu=" + halfTimeOu + ", homeTeam=" + homeTeam + ", inGameMinutes=" + inGameMinutes + ", isActive=" + isActive + ", isLive=" + isLive + ", leagueId=" + leagueId + ", leagueName=" + leagueName + ", marketType=" + marketType + ", marketTypeId=" + marketTypeId + ", matchId=" + matchId + ", startTime=" + startTime + ", startsOn=" + startsOn + ", toBeRemovedOn=" + toBeRemovedOn + ", updatedDateTime=" + updatedDateTime + ", willBeRemoved=" + willBeRemoved + '}';
+        return "MatchGame{" + "awayTeam=" + awayTeam + ", expectedLength=" + expectedLength + ", favoured=" + favoured + ", fullTimeFavoured=" + fullTimeFavoured + ", halfTimeFavoured=" + halfTimeFavoured + ", fullTimeHdp=" + fullTimeHdp + ", fullTimeOneXTwo=" + fullTimeOneXTwo + ", fullTimeOu=" + fullTimeOu + ", gameId=" + gameId + ", halfTimeHdp=" + halfTimeHdp + ", halfTimeOneXTwo=" + halfTimeOneXTwo + ", halfTimeOu=" + halfTimeOu + ", homeTeam=" + homeTeam + ", inGameMinutes=" + inGameMinutes + ", isActive=" + isActive + ", isLive=" + isLive + ", leagueId=" + leagueId + ", leagueName=" + leagueName + ", marketType=" + marketType + ", marketTypeId=" + marketTypeId + ", matchId=" + matchId + ", startTime=" + startTime + ", startsOn=" + startsOn + ", toBeRemovedOn=" + toBeRemovedOn + ", updatedDateTime=" + updatedDateTime + ", willBeRemoved=" + willBeRemoved + '}';
     }
 
 }

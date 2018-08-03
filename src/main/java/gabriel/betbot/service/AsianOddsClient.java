@@ -397,9 +397,14 @@ public class AsianOddsClient {
                 .withBookmakerOdds(bookieOddsMap)
                 .withHandicap(handicap)
                 .withIsFullTime(isFullTime)
-                .withFavoured(matchGame.favoured == 2 ? Team.AWAY_TEAM : Team.HOME_TEAM)
+                .withFavoured(getFavoured(matchGame, isFullTime))
                 .build();
         trades.add(trade);
+    }
+    
+    private static Team getFavoured(final MatchGame matchGame, final boolean isFullTime) {
+        int favoured = isFullTime ? matchGame.fullTimeFavoured : matchGame.halfTimeFavoured;
+        return favoured == 2 ? Team.AWAY_TEAM : Team.HOME_TEAM;
     }
 
     private static void addOneXTwoTrade(final MatchGame matchGame, final List<Trade> trades, final boolean isFullTime, Integer sportsType) {
